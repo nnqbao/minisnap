@@ -82,6 +82,7 @@ namespace MiniSnap
         Tool tool = Tool.Arrow;
         Color color = Palette[0];
         float width = 5;
+        int blurCell = 2, blurSmooth;
         float zoom = 1f;
 
         Shape current, selected;
@@ -105,6 +106,10 @@ namespace MiniSnap
         Button copyBtn, saveBtn, saveAsBtn;
         readonly ToolTip bigTips = new ToolTip();
         ToolStripDropDownButton widthBox;
+        FlatSlider cellSlider, smoothSlider;
+        ToolStripLabel cellValue, smoothValue;
+        readonly List<ToolStripItem> widthItems = new List<ToolStripItem>(), blurItems = new List<ToolStripItem>();
+        bool blurPropsShown, sliderUndoPending;
         readonly Dictionary<Tool, ToolStripButton> toolButtons = new Dictionary<Tool, ToolStripButton>();
         readonly Dictionary<Keys, Tool> toolKeys = new Dictionary<Keys, Tool>();
         readonly List<KeyValuePair<Color, ToolStripButton>> swatches = new List<KeyValuePair<Color, ToolStripButton>>();
@@ -198,7 +203,8 @@ namespace MiniSnap
             colorButton = new ToolStripButton(L.T("Khác..."), null, (s, e) => PickColor()) { ToolTipText = L.T("Chọn màu khác") };
             propsBar.Items.Add(colorButton);
             propsBar.Items.Add(new ToolStripSeparator());
-            propsBar.Items.Add(new ToolStripLabel(L.T("Độ dày:")));
+            var widthLabel = new ToolStripLabel(L.T("Độ dày:"));
+            propsBar.Items.Add(widthLabel);
             // A themed drop-down button instead of a ComboBox, which can't follow dark mode.
             widthBox = new ToolStripDropDownButton(((int)width).ToString()) { AutoSize = false, Width = Px(48), TextAlign = ContentAlignment.MiddleLeft };
             foreach (int w in Widths)
@@ -207,6 +213,11 @@ namespace MiniSnap
                 widthBox.DropDownItems.Add(new ToolStripMenuItem(w.ToString(), null, (s, e) => { SetWidth(ww); canvas.Focus(); }));
             }
             propsBar.Items.Add(widthBox);
+            widthItems.Add(widthLabel);
+            widthItems.Add(widthBox);
+            // The blur tool shows its own settings in place of the stroke width.
+            cellSlider = AddBlurSlider(L.T("Kích thước ô:"), L.T("Kích thước ô mờ: càng lớn càng giống ô mosaic to"), 1, BlurShape.MaxCell, blurCell, out cellValue);
+            smoothSlider = AddBlurSlider(L.T("Độ mờ:"), L.T("Độ mờ: 0 là ô vuông sắc nét, 10 là mờ mịn"), 0, BlurShape.MaxSmooth, blurSmooth, out smoothValue);
             propsBar.Items.Add(new ToolStripSeparator());
             undoBtn = AddButton(propsBar, null, IconKind.Undo, L.T("Hoàn tác"), "Ctrl+Z", Undo);
             redoBtn = AddButton(propsBar, null, IconKind.Redo, L.T("Làm lại"), "Ctrl+Y", Redo);
@@ -371,6 +382,7 @@ namespace MiniSnap
         {
             foreach (var kv in toolButtons) kv.Value.Checked = kv.Key == tool;
             canvas.Cursor = tool == Tool.Select ? Cursors.Default : tool == Tool.Text ? Cursors.IBeam : Cursors.Cross;
+            UpdateBlurProps();
         }
 
         void UpdateSwatches()
@@ -405,6 +417,7 @@ namespace MiniSnap
             if (old != null) old.Dispose();
             sizeLabel.Text = baseImg.Width + L.T(" × ") + baseImg.Height + " px";
             canvas.Invalidate();
+            if (cellSlider != null) UpdateBlurProps();
         }
 
         Size ScaledSize { get { return new Size((int)Math.Ceiling(baseImg.Width * zoom), (int)Math.Ceiling(baseImg.Height * zoom)); } }
@@ -528,6 +541,7 @@ namespace MiniSnap
                 case Tool.Select:
                     selected = HitTest(p);
                     movedSelected = false;
+                    UpdateBlurProps();
                     if (e.Clicks == 2 && selected is TextShape)
                     {
                         mouseDown = false;
@@ -652,7 +666,7 @@ namespace MiniSnap
                 case Tool.Ellipse: s = new EllipseShape(); break;
                 case Tool.Line: s = new LineShape(); break;
                 case Tool.Highlight: s = new HighlightShape(); break;
-                case Tool.Blur: s = new BlurShape(); break;
+                case Tool.Blur: s = new BlurShape { Cell = blurCell, Smooth = blurSmooth }; break;
                 default: s = new ArrowShape(); break;
             }
             s.Color = color;
@@ -852,6 +866,71 @@ namespace MiniSnap
             }
         }
 
+        FlatSlider AddBlurSlider(string label, string tip, int min, int max, int value, out ToolStripLabel valueLabel)
+        {
+            var name = new ToolStripLabel(label) { ToolTipText = tip, Visible = false };
+            var slider = new FlatSlider { Minimum = min, Maximum = max, Value = value, Size = new Size(Px(110), Px(22)), BackColor = Theme.Surface };
+            var hostItem = new ToolStripControlHost(slider) { AutoSize = false, Size = slider.Size, ToolTipText = tip, Visible = false, Margin = new Padding(Px(2), Px(1), Px(2), Px(1)) };
+            var shown = new ToolStripLabel(value.ToString()) { AutoSize = false, Width = Px(24), TextAlign = ContentAlignment.MiddleLeft, Visible = false };
+            valueLabel = shown;
+            slider.Changing += (s, e) => sliderUndoPending = true;
+            slider.ValueChanged += (s, e) => SetBlur(cellSlider.Value, smoothSlider.Value);
+            foreach (var item in new ToolStripItem[] { name, hostItem, shown })
+            {
+                propsBar.Items.Add(item);
+                blurItems.Add(item);
+            }
+            return slider;
+        }
+
+        BlurShape SelectedBlur { get { return tool == Tool.Select ? selected as BlurShape : null; } }
+
+        // Shows the blur settings instead of the stroke width while the blur tool, or a blurred area, is active.
+        void UpdateBlurProps()
+        {
+            var sel = SelectedBlur;
+            bool show = tool == Tool.Blur || sel != null;
+            if (sel != null)
+            {
+                cellSlider.Value = sel.Cell;
+                smoothSlider.Value = sel.Smooth;
+            }
+            else
+            {
+                cellSlider.Value = blurCell;
+                smoothSlider.Value = blurSmooth;
+            }
+            cellValue.Text = cellSlider.Value.ToString();
+            smoothValue.Text = smoothSlider.Value.ToString();
+            if (show == blurPropsShown) return;
+            blurPropsShown = show;
+            propsBar.SuspendLayout();
+            foreach (var item in blurItems) item.Visible = show;
+            foreach (var item in widthItems) item.Visible = !show;
+            propsBar.ResumeLayout();
+        }
+
+        void SetBlur(int cell, int smooth)
+        {
+            cellValue.Text = cell.ToString();
+            smoothValue.Text = smooth.ToString();
+            var sel = SelectedBlur;
+            if (sel == null)
+            {
+                blurCell = cell;
+                blurSmooth = smooth;
+                return;
+            }
+            if (sel.Cell == cell && sel.Smooth == smooth) return;
+            // One undo step per drag of a slider.
+            if (sliderUndoPending) { PushUndo(); sliderUndoPending = false; }
+            sel.Cell = cell;
+            sel.Smooth = smooth;
+            blurCell = cell;
+            blurSmooth = smooth;
+            Rerender();
+        }
+
         void PickColor()
         {
             using (var dlg = new ColorDialog { Color = color, FullOpen = true })
@@ -902,6 +981,8 @@ namespace MiniSnap
             UpdateUndoButtons();
             UpdateTitle();
         }
+
+        public void UseTool(Tool t) { SetTool(t); }
 
         public void LoadShapes(IEnumerable<Shape> list)
         {

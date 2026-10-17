@@ -38,6 +38,8 @@ final class EditorController: NSObject, NSWindowDelegate {
     private(set) var tool: Tool = .arrow
     private var color = EditorController.palette[0]
     private var strokeWidth: CGFloat = 5
+    private var blurCell = 2
+    private var blurSmooth = 0
     private(set) var current: Shape?
     private(set) var selected: Shape?
     private var mouseIsDown = false
@@ -62,6 +64,13 @@ final class EditorController: NSObject, NSWindowDelegate {
     private var swatches: [SwatchButton] = []
     private var customSwatch = SwatchButton(frame: .zero)
     private var widthPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    private var widthViews: [NSView] = []
+    private var blurViews: [NSView] = []
+    private let cellSlider = NSSlider(value: 2, minValue: 1, maxValue: Double(BlurShape.maxCell), target: nil, action: nil)
+    private let smoothSlider = NSSlider(value: 0, minValue: 0, maxValue: Double(BlurShape.maxSmooth), target: nil, action: nil)
+    private let cellValue = NSTextField(labelWithString: "2")
+    private let smoothValue = NSTextField(labelWithString: "0")
+    private var sliderUndoPending = false
     private var undoButton = NSButton()
     private var redoButton = NSButton()
     private var copyButton = NSButton()
@@ -332,14 +341,20 @@ final class EditorController: NSObject, NSWindowDelegate {
         views.append(more)
         views.append(separator())
 
-        views.append(NSTextField(labelWithString: L.t("Độ dày:")))
+        let widthLabel = NSTextField(labelWithString: L.t("Độ dày:"))
         widthPopup = NSPopUpButton(frame: .zero, pullsDown: false)
         widthPopup.addItems(withTitles: EditorController.widths.map { String(Int($0)) })
         widthPopup.selectItem(withTitle: String(Int(strokeWidth)))
         widthPopup.target = self
         widthPopup.action = #selector(widthChanged)
         widthPopup.controlSize = .small
-        views.append(widthPopup)
+        widthViews = [widthLabel, widthPopup]
+        views.append(contentsOf: widthViews)
+        // The blur tool shows its own settings in place of the stroke width (hidden views leave the stack).
+        blurViews = blurSliderViews(L.t("Kích thước ô:"), L.t("Kích thước ô mờ: càng lớn càng giống ô mosaic to"), cellSlider, cellValue)
+            + blurSliderViews(L.t("Độ mờ:"), L.t("Độ mờ: 0 là ô vuông sắc nét, 10 là mờ mịn"), smoothSlider, smoothValue)
+        for v in blurViews { v.isHidden = true }
+        views.append(contentsOf: blurViews)
         views.append(separator())
 
         undoButton = smallButton(L.t("Hoàn tác"), symbolName: "arrow.uturn.backward", tip: L.t("Hoàn tác") + " (⌘Z)", action: #selector(undoPressed))
@@ -366,6 +381,57 @@ final class EditorController: NSObject, NSWindowDelegate {
         row.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 5, right: 12)
         row.translatesAutoresizingMaskIntoConstraints = false
         return row
+    }
+
+    private func blurSliderViews(_ title: String, _ tip: String, _ slider: NSSlider, _ value: NSTextField) -> [NSView] {
+        let label = NSTextField(labelWithString: title)
+        label.toolTip = tip
+        slider.controlSize = .small
+        slider.numberOfTickMarks = Int(slider.maxValue - slider.minValue) + 1
+        slider.allowsTickMarkValuesOnly = true
+        slider.isContinuous = true
+        slider.toolTip = tip
+        slider.target = self
+        slider.action = #selector(blurSliderChanged)
+        slider.translatesAutoresizingMaskIntoConstraints = false
+        slider.widthAnchor.constraint(equalToConstant: 110).isActive = true
+        value.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+        value.translatesAutoresizingMaskIntoConstraints = false
+        value.widthAnchor.constraint(equalToConstant: 20).isActive = true
+        return [label, slider, value]
+    }
+
+    private var selectedBlur: BlurShape? { tool == .select ? selected as? BlurShape : nil }
+
+    /// Shows the blur settings instead of the stroke width while the blur tool, or a blurred area, is active.
+    private func updateBlurProps() {
+        let sel = selectedBlur
+        let show = tool == .blur || sel != nil
+        cellSlider.integerValue = sel?.cell ?? blurCell
+        smoothSlider.integerValue = sel?.smooth ?? blurSmooth
+        cellValue.stringValue = String(cellSlider.integerValue)
+        smoothValue.stringValue = String(smoothSlider.integerValue)
+        if blurViews.first?.isHidden == !show { return }
+        for v in blurViews { v.isHidden = !show }
+        for v in widthViews { v.isHidden = show }
+    }
+
+    @objc private func blurSliderChanged(_ sender: NSSlider) {
+        // One undo step per drag: the gesture starts with a mouse down (or a key press).
+        if let t = NSApp.currentEvent?.type, t == .leftMouseDown || t == .keyDown || t == .scrollWheel { sliderUndoPending = true }
+        let cell = cellSlider.integerValue, smooth = smoothSlider.integerValue
+        cellValue.stringValue = String(cell)
+        smoothValue.stringValue = String(smooth)
+        blurCell = cell
+        blurSmooth = smooth
+        guard let sel = selectedBlur, sel.cell != cell || sel.smooth != smooth else { return }
+        if sliderUndoPending {
+            pushUndo()
+            sliderUndoPending = false
+        }
+        sel.cell = cell
+        sel.smooth = smooth
+        rerender()
     }
 
     private func separator() -> NSView {
@@ -401,6 +467,7 @@ final class EditorController: NSObject, NSWindowDelegate {
 
     private func updateToolButtons() {
         for (t, b) in toolButtons { setGlassButtonSelected(b, t == tool) }
+        updateBlurProps()
         window.invalidateCursorRects(for: canvas)
     }
 
@@ -446,6 +513,7 @@ final class EditorController: NSObject, NSWindowDelegate {
         cache = Renderer.render(base: base, shapes: shapes)
         sizeLabel.stringValue = String(base.width) + " × " + String(base.height) + " px"
         canvas.needsDisplay = true
+        updateBlurProps()
     }
 
     private func flattened() -> CGImage? {
@@ -497,6 +565,7 @@ final class EditorController: NSObject, NSWindowDelegate {
         switch tool {
         case .select:
             selected = hitTest(p)
+            updateBlurProps()
             movedSelected = false
             if clickCount == 2, let ts = selected as? TextShape {
                 mouseIsDown = false
@@ -616,7 +685,11 @@ final class EditorController: NSObject, NSWindowDelegate {
         case .ellipse: return EllipseShape(color: color, width: strokeWidth)
         case .line: return LineShape(color: color, width: strokeWidth)
         case .highlight: return HighlightShape(color: color, width: strokeWidth)
-        case .blur: return BlurShape(color: color, width: strokeWidth)
+        case .blur:
+            let s = BlurShape(color: color, width: strokeWidth)
+            s.cell = blurCell
+            s.smooth = blurSmooth
+            return s
         default: return ArrowShape(color: color, width: strokeWidth)
         }
     }

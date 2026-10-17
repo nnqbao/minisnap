@@ -20,7 +20,7 @@
 |---|---|---|---|
 | Capture a region, a window or the full screen, with magnifier | ✅ | ✅ | ✅ (window via the system picker on Wayland) |
 | All-in-one: after selecting an area, pick **screenshot, video or scrolling capture**; resize the area or type an exact size | ✅ | ✅ | ✅ |
-| Annotate: arrow, box, ellipse, line, pen, highlight, text, blur, step numbers, crop, undo/redo | ✅ | ✅ | ✅ |
+| Annotate: arrow, box, ellipse, line, pen, highlight, text, blur / mosaic (adjustable cell size and softness), step numbers, crop, undo/redo | ✅ | ✅ | ✅ |
 | Big one-click **Copy / Save / Save as** buttons; every capture is auto-saved and copied | ✅ | ✅ | ✅ |
 | Scrolling capture of long pages (sticky headers/footers handled) | ✅ | ✅ | ✅ (RemoteDesktop portal; permission remembered) |
 | Screen recording to MP4 (H.264) with pause/resume | ✅ | ✅ | ✅ (PipeWire) |
@@ -121,7 +121,7 @@ MiniSnap là phần mềm chụp màn hình **miễn phí, nguồn mở (giấy 
 
 - Chụp vùng, cửa sổ hoặc toàn màn hình, có kính lúp.
 - Chọn vùng xong sẽ hiện thanh nhỏ để chọn **chụp ảnh, quay video hay chụp cuộn**; kéo chỉnh vùng hoặc nhập kích thước chính xác.
-- Chú thích: mũi tên, khung, elip, đường thẳng, bút vẽ, tô sáng, chữ, làm mờ, đánh số bước, cắt ảnh, hoàn tác / làm lại.
+- Chú thích: mũi tên, khung, elip, đường thẳng, bút vẽ, tô sáng, chữ, làm mờ / mosaic (chỉnh được kích thước ô và độ mờ), đánh số bước, cắt ảnh, hoàn tác / làm lại.
 - Nút lớn **Sao chép / Lưu / Lưu thành…**; mọi ảnh chụp đều tự lưu và tự sao chép vào clipboard.
 - Chụp cuộn trang dài, quay video màn hình ra MP4, trích chữ trong ảnh (OCR, chạy offline, đọc được tiếng Việt).
 - Thư viện ảnh & video có ảnh thu nhỏ; phím tắt; giao diện tiếng Việt / tiếng Anh.

@@ -10,6 +10,7 @@ DrawingArea's Cairo context is in logical units, so drawing scales by zoom / dev
 
 import math
 import os
+import time
 
 import cairo
 
@@ -19,7 +20,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 from . import icons, paths, render, shapes, theme
 from .i18n import L
 from .shapes import (ARROW, BLUR, CROP, ELLIPSE, HIGHLIGHT, LINE, PEN, RECT, SELECT, STEP, TEXT,
-                     PenShape, StepShape, TextShape, TwoPointShape)
+                     BlurShape, PenShape, StepShape, TextShape, TwoPointShape)
 
 PALETTE = [(232, 38, 38), (255, 140, 0), (255, 214, 0), (40, 170, 70),
            (30, 120, 230), (150, 70, 200), (30, 30, 30), (255, 255, 255)]
@@ -185,13 +186,26 @@ class EditorWindow(Adw.ApplicationWindow):
         more.connect("clicked", lambda *_: self.pick_color())
         row2.append(more)
         row2.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
-        row2.append(Gtk.Label(label=L.t("Độ dày:")))
+        width_label = Gtk.Label(label=L.t("Độ dày:"))
+        row2.append(width_label)
         self.width_drop = Gtk.DropDown.new_from_strings([str(w) for w in WIDTHS])
         self.width_drop.set_selected(WIDTHS.index(5))
         self.width_drop.set_focus_on_click(False)
         self._width_guard = False
         self.width_drop.connect("notify::selected", self._on_width_selected)
         row2.append(self.width_drop)
+        self.width_widgets = [width_label, self.width_drop]
+        # The blur tool shows its own settings in place of the stroke width.
+        self.blur_cell, self.blur_smooth = 2, 0
+        self._blur_guard = False
+        self._blur_last_change = 0.0
+        self.blur_widgets = []
+        self.cell_scale, self.cell_value = self._blur_slider(
+            row2, L.t("Kích thước ô:"), L.t("Kích thước ô mờ: càng lớn càng giống ô mosaic to"), 1, BlurShape.MAX_CELL, self.blur_cell)
+        self.smooth_scale, self.smooth_value = self._blur_slider(
+            row2, L.t("Độ mờ:"), L.t("Độ mờ: 0 là ô vuông sắc nét, 10 là mờ mịn"), 0, BlurShape.MAX_SMOOTH, self.blur_smooth)
+        for wdg in self.blur_widgets:
+            wdg.set_visible(False)
         row2.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
         self.undo_btn = self._small_button("undo", None, L.t("Hoàn tác") + " (Ctrl+Z)", self.undo)
         self.redo_btn = self._small_button("redo", None, L.t("Làm lại") + " (Ctrl+Y)", self.redo)
@@ -342,6 +356,70 @@ class EditorWindow(Adw.ApplicationWindow):
             if b.get_active() != (t == self.tool):
                 b.set_active(t == self.tool)
         self.canvas.set_cursor_from_name("default" if self.tool == SELECT else "text" if self.tool == TEXT else "crosshair")
+        self._update_blur_props()
+
+    # ---------- Blur settings ----------
+
+    def _blur_slider(self, row, title, tip, lo, hi, value):
+        label = Gtk.Label(label=title)
+        label.set_tooltip_text(tip)
+        scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, lo, hi, 1)
+        scale.set_draw_value(False)
+        scale.set_round_digits(0)
+        scale.set_value(value)
+        scale.set_size_request(110, -1)
+        scale.set_valign(Gtk.Align.CENTER)
+        scale.set_tooltip_text(tip)
+        scale.set_focus_on_click(False)
+        scale.connect("value-changed", self._on_blur_slider)
+        shown = Gtk.Label(label=str(value))
+        shown.set_width_chars(2)
+        shown.set_xalign(0)
+        shown.add_css_class("numeric")
+        for wdg in (label, scale, shown):
+            row.append(wdg)
+            self.blur_widgets.append(wdg)
+        return scale, shown
+
+    def _selected_blur(self):
+        return self.selected if self.tool == SELECT and isinstance(self.selected, BlurShape) else None
+
+    def _update_blur_props(self):
+        """Shows the blur settings instead of the stroke width while the blur tool, or a blurred area, is active."""
+        if not getattr(self, "blur_widgets", None):
+            return
+        sel = self._selected_blur()
+        show = self.tool == BLUR or sel is not None
+        self._blur_guard = True
+        self.cell_scale.set_value(sel.cell if sel is not None else self.blur_cell)
+        self.smooth_scale.set_value(sel.smooth if sel is not None else self.blur_smooth)
+        self._blur_guard = False
+        self.cell_value.set_text(str(int(self.cell_scale.get_value())))
+        self.smooth_value.set_text(str(int(self.smooth_scale.get_value())))
+        if self.blur_widgets[0].get_visible() == show:
+            return
+        for wdg in self.blur_widgets:
+            wdg.set_visible(show)
+        for wdg in self.width_widgets:
+            wdg.set_visible(not show)
+
+    def _on_blur_slider(self, _scale):
+        if self._blur_guard:
+            return
+        cell, smooth = int(round(self.cell_scale.get_value())), int(round(self.smooth_scale.get_value()))
+        self.cell_value.set_text(str(cell))
+        self.smooth_value.set_text(str(smooth))
+        self.blur_cell, self.blur_smooth = cell, smooth
+        sel = self._selected_blur()
+        if sel is None or (sel.cell == cell and sel.smooth == smooth):
+            return
+        # Changes less than a second apart (one drag of a slider) share one undo step.
+        now = time.monotonic()
+        if now - self._blur_last_change > 1.0:
+            self._push_undo()
+        self._blur_last_change = now
+        sel.cell, sel.smooth = cell, smooth
+        self._rerender()
 
     def _update_swatches(self):
         matched = False
@@ -375,6 +453,7 @@ class EditorWindow(Adw.ApplicationWindow):
         self.cache = render.render(self.base, self.shapes)
         self.size_label.set_text("%d × %d px" % (self.base.get_width(), self.base.get_height()))
         self.canvas.queue_draw()
+        self._update_blur_props()
 
     def _layout_canvas(self):
         s = self._view_scale()
@@ -514,6 +593,7 @@ class EditorWindow(Adw.ApplicationWindow):
         t = self.tool
         if t == SELECT:
             self.selected = self._hit_test(p)
+            self._update_blur_props()
             self.moved_selected = False
             if double and isinstance(self.selected, TextShape):
                 self.mouse_down = False
@@ -539,6 +619,8 @@ class EditorWindow(Adw.ApplicationWindow):
             self.canvas.queue_draw()
         else:
             s = shapes.create_two_point(t, self.color, self.width)
+            if isinstance(s, BlurShape):
+                s.cell, s.smooth = self.blur_cell, self.blur_smooth
             s.a = s.b = p
             self.current = s
 

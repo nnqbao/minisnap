@@ -218,9 +218,24 @@ final class BlurShape: TwoPointShape {
     }
 
     override var bounds: CGRect { rect }
-    override func clone() -> Shape { copyPoints(to: BlurShape(color: color, width: width)) }
+    override func clone() -> Shape {
+        let c = BlurShape(color: color, width: width)
+        c.cell = cell
+        c.smooth = smooth
+        return copyPoints(to: c)
+    }
 
-    /// Pixelates the area directly in the RGBA bitmap memory of `ctx` (memory row 0 = image top).
+    static let maxCell = 10, maxSmooth = 10
+    /// Mosaic cell size, 1...10 (10 to 64 image pixels).
+    var cell = 2
+    /// 0 = crisp squares ... 10 = a smooth blur.
+    var smooth = 0
+
+    var cellPixels: Int { 4 + 6 * max(1, min(BlurShape.maxCell, cell)) }
+
+    /// Blurs the area directly in the RGBA bitmap memory of `ctx` (memory row 0 = image top): every cell is
+    /// averaged; the mosaic shows the averages as squares, the smooth blur interpolates between the cell
+    /// centres, and `smooth` blends the two (same result as the Windows and Linux versions).
     func apply(to ctx: CGContext, width w: Int, height h: Int) {
         var r = rect.integral.intersection(CGRect(x: 0, y: 0, width: w, height: h))
         if r.isNull { return }
@@ -230,33 +245,62 @@ final class BlurShape: TwoPointShape {
         guard let raw = ctx.data else { return }
         let bpr = ctx.bytesPerRow
         let px = raw.bindMemory(to: UInt8.self, capacity: bpr * h)
-        let block = max(6, Int(width * 3))
-        var by = y0
-        while by < y0 + rh {
-            let bh = min(block, y0 + rh - by)
-            var bx = x0
-            while bx < x0 + rw {
-                let bw = min(block, x0 + rw - bx)
-                var sr = 0, sg = 0, sb = 0, sa = 0
-                for y in by..<(by + bh) {
-                    var o = y * bpr + bx * 4
-                    for _ in 0..<bw {
-                        sr += Int(px[o]); sg += Int(px[o + 1]); sb += Int(px[o + 2]); sa += Int(px[o + 3])
+        let block = cellPixels
+        let sw = max(1, (rw + block / 2) / block), sh = max(1, (rh + block / 2) / block)
+        let cw = Double(rw) / Double(sw), ch = Double(rh) / Double(sh)
+        // Cell edges in pixels, so cells tile the area exactly.
+        let xs = (0...sw).map { x0 + Int((Double($0) * cw).rounded()) }
+        let ys = (0...sh).map { y0 + Int((Double($0) * ch).rounded()) }
+        var avg = [Double](repeating: 0, count: sw * sh * 4)
+        for j in 0..<sh {
+            for i in 0..<sw {
+                var s0 = 0, s1 = 0, s2 = 0, s3 = 0
+                for y in ys[j]..<ys[j + 1] {
+                    var o = y * bpr + xs[i] * 4
+                    for _ in xs[i]..<xs[i + 1] {
+                        s0 += Int(px[o]); s1 += Int(px[o + 1]); s2 += Int(px[o + 2]); s3 += Int(px[o + 3])
                         o += 4
                     }
                 }
-                let n = bw * bh
-                let cr = UInt8(sr / n), cg = UInt8(sg / n), cb = UInt8(sb / n), ca = UInt8(sa / n)
-                for y in by..<(by + bh) {
-                    var o = y * bpr + bx * 4
-                    for _ in 0..<bw {
-                        px[o] = cr; px[o + 1] = cg; px[o + 2] = cb; px[o + 3] = ca
-                        o += 4
-                    }
-                }
-                bx += block
+                let n = Double(max(1, (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j])))
+                let k = (j * sw + i) * 4
+                avg[k] = Double(s0) / n; avg[k + 1] = Double(s1) / n; avg[k + 2] = Double(s2) / n; avg[k + 3] = Double(s3) / n
             }
-            by += block
+        }
+        let t = Double(max(0, min(BlurShape.maxSmooth, smooth))) / Double(BlurShape.maxSmooth)
+        // Position between cell centres, eased so the smooth blur has no visible creases.
+        func split(_ p: Double, _ size: Double, _ count: Int) -> (Int, Int, Double) {
+            let u = max(0, min(Double(count - 1), (p + 0.5) / size - 0.5))
+            let i0 = Int(u.rounded(.down)), i1 = min(i0 + 1, count - 1)
+            let f = u - Double(i0)
+            return (i0, i1, f * f * (3 - 2 * f))
+        }
+        var cellX = [Int](repeating: 0, count: rw)
+        var lerpX = [(Int, Int, Double)](repeating: (0, 0, 0), count: rw)
+        var i = 0
+        for x in 0..<rw {
+            while x0 + x >= xs[i + 1] { i += 1 }
+            cellX[x] = i
+            lerpX[x] = split(Double(x), cw, sw)
+        }
+        var j = 0
+        for y in 0..<rh {
+            while y0 + y >= ys[j + 1] { j += 1 }
+            let (j0, j1, fy) = split(Double(y), ch, sh)
+            var o = (y0 + y) * bpr + x0 * 4
+            for x in 0..<rw {
+                let (i0, i1, fx) = lerpX[x]
+                let m = (j * sw + cellX[x]) * 4
+                let a = (j0 * sw + i0) * 4, b = (j0 * sw + i1) * 4, c = (j1 * sw + i0) * 4, d = (j1 * sw + i1) * 4
+                for k in 0..<4 {
+                    let top = avg[a + k] + (avg[b + k] - avg[a + k]) * fx
+                    let bottom = avg[c + k] + (avg[d + k] - avg[c + k]) * fx
+                    let soft = top + (bottom - top) * fy
+                    let v = avg[m + k] + (soft - avg[m + k]) * t
+                    px[o + k] = UInt8(max(0, min(255, v.rounded())))
+                }
+                o += 4
+            }
         }
     }
 }
@@ -435,6 +479,55 @@ enum Renderer {
             } else {
                 s.draw(ctx)
             }
+        }
+        return ctx.makeImage()
+    }
+}
+
+/// Test picture for the blur settings: rows are cell sizes 1, 4, 7, 10, columns softness 0, 5, 10.
+@MainActor
+enum BlurGrid {
+    static func write(to url: URL) -> Bool {
+        let cells = [1, 4, 7, 10], smooths = [0, 5, 10]
+        let tw = 300, th = 150
+        guard let grid = ImageUtil.makeContext(width: tw * smooths.count, height: th * cells.count) else { return false }
+        for (row, cell) in cells.enumerated() {
+            for (col, smooth) in smooths.enumerated() {
+                guard let tile = sample(width: tw, height: th) else { return false }
+                let blur = BlurShape(color: RGBAColor(0, 0, 0), width: 5)
+                blur.a = CGPoint(x: 10, y: 10)
+                blur.b = CGPoint(x: tw - 10, y: th - 10)
+                blur.cell = cell
+                blur.smooth = smooth
+                guard let flat = Renderer.render(base: tile, shapes: [blur]) else { return false }
+                // CGContext has y up: row 0 goes to the top.
+                grid.draw(flat, in: CGRect(x: col * tw, y: (cells.count - 1 - row) * th, width: tw, height: th))
+            }
+        }
+        guard let image = grid.makeImage() else { return false }
+        do { try ImageUtil.write(image, to: url) } catch { return false }
+        return true
+    }
+
+    /// Coloured bands over a fine black-and-white pattern standing in for text.
+    private static func sample(width w: Int, height h: Int) -> CGImage? {
+        guard let ctx = ImageUtil.makeContext(width: w, height: h) else { return nil }
+        ctx.translateBy(x: 0, y: CGFloat(h))
+        ctx.scaleBy(x: 1, y: -1)
+        ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        let bands = [RGBAColor(255, 214, 0), RGBAColor(30, 145, 75), RGBAColor(25, 110, 225), RGBAColor(232, 38, 38)]
+        for (i, c) in bands.enumerated() {
+            ctx.setFillColor(c.cg())
+            ctx.fill(CGRect(x: i * w / bands.count, y: 0, width: w / bands.count + 1, height: h / 2))
+        }
+        ctx.setFillColor(CGColor(gray: 0, alpha: 1))
+        var x = 20
+        while x < w - 20 {
+            for y in stride(from: h / 2 + 14, to: h - 14, by: 8) where (x / 6 + y / 8) % 3 != 0 {
+                ctx.fill(CGRect(x: x, y: y, width: 4, height: 5))
+            }
+            x += 6
         }
         return ctx.makeImage()
     }

@@ -5,6 +5,12 @@ import UniformTypeIdentifiers
 @main
 enum MiniSnapMain {
     static func main() {
+        // `MiniSnap --blur-grid out.png`: renders every blur cell size / softness pair to a PNG and exits (used by CI).
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "--blur-grid"), i + 1 < args.count {
+            let ok = MainActor.assumeIsolated { BlurGrid.write(to: URL(fileURLWithPath: args[i + 1])) }
+            exit(ok ? 0 : 1)
+        }
         MainActor.assumeIsolated {
             let app = NSApplication.shared
             let delegate = AppDelegate()

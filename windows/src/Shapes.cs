@@ -118,6 +118,12 @@ namespace MiniSnap
 
     class BlurShape : TwoPointShape
     {
+        public const int MaxCell = 10, MaxSmooth = 10;
+        // Cell: mosaic cell size, 1..10 (10 to 64 image pixels). Smooth: 0 = crisp squares .. 10 = a smooth blur.
+        public int Cell = 2, Smooth = 0;
+
+        public int CellPixels { get { return 4 + 6 * Math.Max(1, Math.Min(MaxCell, Cell)); } }
+
         // Preview while dragging; the real pixelation happens in Apply on the flattened image.
         public override void Draw(Graphics g)
         {
@@ -135,23 +141,42 @@ namespace MiniSnap
             Rectangle r = Rectangle.Round(Rect);
             r.Intersect(new Rectangle(0, 0, canvas.Width, canvas.Height));
             if (r.Width < 2 || r.Height < 2) return;
-            int block = Math.Max(6, (int)(Width * 3));
-            int sw = Math.Max(1, r.Width / block), sh = Math.Max(1, r.Height / block);
+            int block = CellPixels;
+            int sw = Math.Max(1, (r.Width + block / 2) / block), sh = Math.Max(1, (r.Height + block / 2) / block);
+            float smooth = Math.Max(0, Math.Min(MaxSmooth, Smooth)) / (float)MaxSmooth;
             using (var small = new Bitmap(sw, sh, PixelFormat.Format32bppPArgb))
             {
+                // Average each cell: a box-filtered downscale of the area.
                 using (var sg = Graphics.FromImage(small))
                 using (var ia = new ImageAttributes())
                 {
                     ia.SetWrapMode(WrapMode.TileFlipXY);
+                    sg.CompositingMode = CompositingMode.SourceCopy;
                     sg.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    sg.PixelOffsetMode = PixelOffsetMode.Half;
                     sg.DrawImage(canvas, new Rectangle(0, 0, sw, sh), r.X, r.Y, r.Width, r.Height, GraphicsUnit.Pixel, ia);
                 }
                 using (var g = Graphics.FromImage(canvas))
+                using (var ia = new ImageAttributes())
                 {
-                    g.CompositingMode = CompositingMode.SourceCopy;
-                    g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                    g.SetClip(r);
                     g.PixelOffsetMode = PixelOffsetMode.Half;
-                    g.DrawImage(small, r, new Rectangle(0, 0, sw, sh), GraphicsUnit.Pixel);
+                    ia.SetWrapMode(WrapMode.TileFlipXY);
+                    // Mosaic: the cells blown up as hard squares.
+                    if (smooth < 1f)
+                    {
+                        g.CompositingMode = CompositingMode.SourceCopy;
+                        g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                        g.DrawImage(small, r, 0, 0, sw, sh, GraphicsUnit.Pixel, ia);
+                    }
+                    // Blur: the same cells blown up smoothly, blended over the squares by Smooth.
+                    if (smooth > 0f)
+                    {
+                        g.CompositingMode = smooth >= 1f ? CompositingMode.SourceCopy : CompositingMode.SourceOver;
+                        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                        if (smooth < 1f) ia.SetColorMatrix(new ColorMatrix { Matrix33 = smooth });
+                        g.DrawImage(small, r, 0, 0, sw, sh, GraphicsUnit.Pixel, ia);
+                    }
                 }
             }
         }

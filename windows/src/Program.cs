@@ -810,6 +810,7 @@ namespace MiniSnap
             TestHotkeys(dir);
             TestModeBar(dir);
             TestRender(dir);
+            TestBlur(dir);
             TestStitch(dir);
             TestOcr(dir);
             TestVideo(dir);
@@ -994,6 +995,59 @@ namespace MiniSnap
                 ed.SkipSavePrompt = true;
                 CaptureFormAndClose(ed, Path.Combine(dir, "editor.png"), 1200);
             }
+            // The blur tool swaps the stroke width for its cell size and softness sliders.
+            using (var sample = SampleImage(900, 560, 9, 4))
+            {
+                var ed = new EditorForm(sample, null, () => { }, b => { }, () => { });
+                ed.LoadShapes(new List<Shape> { new BlurShape { A = new PointF(30, 20), B = new PointF(620, 260), Cell = 5, Smooth = 3 } });
+                ed.UseTool(Tool.Blur);
+                ed.SkipSavePrompt = true;
+                CaptureFormAndClose(ed, Path.Combine(dir, "editor-blur.png"), 1200);
+            }
+        }
+
+        // Coloured bands with dark text, so cells and softness are easy to judge.
+        static Bitmap BlurSample(int w, int h)
+        {
+            var bmp = new Bitmap(w, h, PixelFormat.Format32bppPArgb);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                Color[] bands = { Color.FromArgb(255, 214, 0), Color.FromArgb(30, 145, 75), Color.FromArgb(25, 110, 225), Color.FromArgb(232, 38, 38) };
+                for (int i = 0; i < bands.Length; i++)
+                    using (var br = new SolidBrush(bands[i])) g.FillRectangle(br, i * w / bands.Length, 0, w / bands.Length + 1, h / 2);
+                g.FillRectangle(Brushes.White, 0, h / 2, w, h - h / 2);
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+                using (var f = new Font("Segoe UI", 26f, FontStyle.Bold, GraphicsUnit.Pixel))
+                {
+                    g.DrawString("0912 345 678", f, Brushes.White, 20, 18);
+                    g.DrawString("nnqbao@mail.vn", f, Brushes.Black, 20, h / 2 + 10);
+                }
+            }
+            return bmp;
+        }
+
+        // Every cell size (rows 1, 4, 7, 10) against softness 0, 5 and 10 (columns), on the same picture.
+        static void TestBlur(string dir)
+        {
+            int[] cells = { 1, 4, 7, 10 }, smooths = { 0, 5, 10 };
+            const int tw = 300, th = 150;
+            using (var grid = new Bitmap(tw * smooths.Length, th * cells.Length, PixelFormat.Format32bppPArgb))
+            {
+                using (var g = Graphics.FromImage(grid))
+                    for (int row = 0; row < cells.Length; row++)
+                        for (int col = 0; col < smooths.Length; col++)
+                            using (var tile = BlurSample(tw, th))
+                            {
+                                var blur = new BlurShape { A = new PointF(10, 10), B = new PointF(tw - 10, th - 10), Cell = cells[row], Smooth = smooths[col] };
+                                using (var flat = Renderer.Render(tile, new List<Shape> { blur }))
+                                    g.DrawImage(flat, col * tw, row * th, tw, th);
+                                g.DrawRectangle(Pens.White, col * tw, row * th, tw - 1, th - 1);
+                                using (var f = new Font("Segoe UI", 12f, FontStyle.Bold, GraphicsUnit.Pixel))
+                                    g.DrawString("cell " + cells[row] + " / soft " + smooths[col], f, Brushes.Black, col * tw + 14, row * th + th - 26);
+                            }
+                grid.Save(Path.Combine(dir, "blur-grid.png"), ImageFormat.Png);
+            }
+            Log(dir, "blur grid: " + cells.Length * smooths.Length + " tiles");
         }
 
         static void TestUpdater(string dir)

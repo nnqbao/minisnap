@@ -224,9 +224,21 @@ class HighlightShape(TwoPointShape):
 
 
 class BlurShape(TwoPointShape):
-    """Preview while dragging; the real pixelation happens in apply() on the flattened image."""
+    """Preview while dragging; the real blur happens in apply() on the flattened image.
 
+    cell: mosaic cell size, 1..10 (10 to 64 image pixels). smooth: 0 = crisp squares .. 10 = a smooth blur."""
+
+    MAX_CELL = 10
+    MAX_SMOOTH = 10
     _checker = None
+
+    def __init__(self, cell=2, smooth=0, **kw):
+        super().__init__(**kw)
+        self.cell = int(cell)
+        self.smooth = int(smooth)
+
+    def cell_pixels(self):
+        return 4 + 6 * max(1, min(self.MAX_CELL, int(self.cell)))
 
     @classmethod
     def _checker_pattern(cls):
@@ -265,15 +277,17 @@ class BlurShape(TwoPointShape):
         return self.rect
 
     def apply(self, surface):
-        """Pixelates the area of `surface` (a cairo ImageSurface) in place."""
+        """Blurs the area of `surface` (a cairo ImageSurface) in place: every cell is averaged, the mosaic
+        shows the averages as squares, the smooth blur interpolates between them, and `smooth` blends the two."""
         x, y, w, h = self.rect
         r = intersect((int(round(x)), int(round(y)), int(round(w)), int(round(h))),
                       (0, 0, surface.get_width(), surface.get_height()))
         rx, ry, rw, rh = r
         if rw < 2 or rh < 2:
             return
-        block = max(6, int(self.width * 3))
-        sw, sh = max(1, rw // block), max(1, rh // block)
+        block = self.cell_pixels()
+        sw, sh = max(1, (rw + block // 2) // block), max(1, (rh + block // 2) // block)
+        t = max(0, min(self.MAX_SMOOTH, int(self.smooth))) / float(self.MAX_SMOOTH)
         surface.flush()
         small = cairo.ImageSurface(cairo.FORMAT_ARGB32, sw, sh)
         sc = cairo.Context(small)
@@ -289,11 +303,18 @@ class BlurShape(TwoPointShape):
         c.clip()
         c.translate(rx, ry)
         c.scale(rw / float(sw), rh / float(sh))
-        c.set_source_surface(small, 0, 0)
-        c.get_source().set_filter(cairo.FILTER_NEAREST)
-        c.get_source().set_extend(cairo.EXTEND_PAD)
-        c.set_operator(cairo.OPERATOR_SOURCE)
-        c.paint()
+        if t < 1:
+            c.set_source_surface(small, 0, 0)
+            c.get_source().set_filter(cairo.FILTER_NEAREST)
+            c.get_source().set_extend(cairo.EXTEND_PAD)
+            c.set_operator(cairo.OPERATOR_SOURCE)
+            c.paint()
+        if t > 0:
+            c.set_source_surface(small, 0, 0)
+            c.get_source().set_filter(cairo.FILTER_BILINEAR)
+            c.get_source().set_extend(cairo.EXTEND_PAD)
+            c.set_operator(cairo.OPERATOR_SOURCE if t >= 1 else cairo.OPERATOR_OVER)
+            c.paint_with_alpha(t)
         surface.flush()
 
 

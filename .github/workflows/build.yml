@@ -37,6 +37,17 @@ jobs:
       - name: Build MiniSnap.app
         if: steps.src.outputs.present == 'true'
         run: bash macos/build.sh
+      - name: Render the blur settings grid
+        if: steps.src.outputs.present == 'true'
+        run: |
+          mkdir -p macos-selftest
+          macos/dist/MiniSnap.app/Contents/MacOS/MiniSnap --blur-grid "$PWD/macos-selftest/blur-grid.png"
+          test -s macos-selftest/blur-grid.png
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.src.outputs.present == 'true'
+        with:
+          name: MiniSnap-macOS-selftest
+          path: macos-selftest
       - uses: actions/upload-artifact@v4
         if: steps.src.outputs.present == 'true'
         with:

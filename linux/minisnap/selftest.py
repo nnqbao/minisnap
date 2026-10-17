@@ -20,7 +20,7 @@ import threading
 import time
 import traceback
 
-WINDOW_KINDS = ("launcher", "editor", "overlay", "library", "about", "shortcuts", "shortcuts-portal", "scroll-status",
+WINDOW_KINDS = ("launcher", "editor", "editor-blur", "overlay", "library", "about", "shortcuts", "shortcuts-portal", "scroll-status",
                 "update")
 
 
@@ -108,6 +108,33 @@ def text_image(text, w=900, h=160):
     cr.move_to(30, 40)
     cr.set_source_rgb(0, 0, 0)
     PangoCairo.show_layout(cr, layout)
+    s.flush()
+    return s
+
+
+def blur_sample(w, h):
+    """Coloured bands over dark text, so blur cells and softness are easy to judge."""
+    import cairo
+    from . import _gi  # noqa: F401
+    from gi.repository import PangoCairo
+    from .shapes import font_desc
+
+    s = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+    cr = cairo.Context(s)
+    cr.set_source_rgb(1, 1, 1)
+    cr.paint()
+    bands = ((255, 214, 0), (30, 145, 75), (25, 110, 225), (232, 38, 38))
+    for i, (r, g, b) in enumerate(bands):
+        cr.set_source_rgb(r / 255.0, g / 255.0, b / 255.0)
+        cr.rectangle(i * w // len(bands), 0, w // len(bands) + 1, h // 2)
+        cr.fill()
+    layout = PangoCairo.create_layout(cr)
+    layout.set_font_description(font_desc(26, bold=True))
+    for text, y, rgb in (("0912 345 678", 14, (1, 1, 1)), ("nnqbao@mail.vn", h // 2 + 8, (0, 0, 0))):
+        layout.set_text(text, -1)
+        cr.move_to(20, y)
+        cr.set_source_rgb(*rgb)
+        PangoCairo.show_layout(cr, layout)
     s.flush()
     return s
 
@@ -338,6 +365,7 @@ class Runner:
             ("args", self.test_args),
             ("i18n", self.test_i18n),
             ("render", self.test_render),
+            ("blur settings", self.test_blur),
             ("stitch", self.test_stitch),
             ("scroll session", self.test_scroll_session),
             ("scroll portal plumbing", self.test_scroll_plumbing),
@@ -455,6 +483,42 @@ class Runner:
             raise RuntimeError("box edge pixel is %s, expected red" % ((r, g, b),))
         self._render_sample = flat
         return "%dx%d" % render.size(flat)
+
+    def test_blur(self):
+        """Cell sizes 1, 4, 7, 10 (rows) against softness 0, 5, 10 (columns) -> blur-grid.png, plus checks that
+        a mosaic is made of flat cells and that softness removes the cell edges."""
+        import cairo
+        from . import render
+        from .shapes import BlurShape
+        cells, smooths, tw, th = (1, 4, 7, 10), (0, 5, 10), 300, 150
+        grid = cairo.ImageSurface(cairo.FORMAT_ARGB32, tw * len(smooths), th * len(cells))
+        cr = cairo.Context(grid)
+        tiles = {}
+        for row, cell in enumerate(cells):
+            for col, smooth in enumerate(smooths):
+                blur = BlurShape(a=(10, 10), b=(tw - 10, th - 10), cell=cell, smooth=smooth)
+                flat = render.render(blur_sample(tw, th), [blur])
+                tiles[(cell, smooth)] = flat
+                cr.set_source_surface(flat, col * tw, row * th)
+                cr.paint()
+        grid.write_to_png(os.path.join(self.outdir, "blur-grid.png"))
+        # Cell 10 is 64 px: inside one cell of the crisp mosaic every pixel is the same.
+        crisp = tiles[(10, 0)]
+        if len({render.pixel_rgb(crisp, x, y) for x in range(14, 60, 7) for y in range(14, 60, 7)}) != 1:
+            raise RuntimeError("cell 10 / soft 0 is not a flat cell")
+        # Fully soft: neighbouring pixels across a cell edge differ only a little.
+        soft = tiles[(4, 10)]
+        jumps = max(max(abs(p - q) for p, q in zip(render.pixel_rgb(soft, x, 40), render.pixel_rgb(soft, x + 1, 40)))
+                    for x in range(12, 280))
+        crisp_jumps = max(max(abs(p - q) for p, q in zip(render.pixel_rgb(tiles[(4, 0)], x, 40),
+                                                          render.pixel_rgb(tiles[(4, 0)], x + 1, 40)))
+                          for x in range(12, 280))
+        if not jumps < crisp_jumps:
+            raise RuntimeError("softness 10 does not smooth the cells (max step %d vs %d)" % (jumps, crisp_jumps))
+        copy = BlurShape(a=(0, 0), b=(5, 5), cell=7, smooth=3).clone()
+        if (copy.cell, copy.smooth, BlurShape().cell_pixels(), BlurShape(cell=10).cell_pixels()) != (7, 3, 16, 64):
+            raise RuntimeError("clone/cell_pixels")
+        return "%d tiles, max step crisp %d / soft %d" % (len(tiles), crisp_jumps, jumps)
 
     def test_stitch(self):
         """Synthetic scrolling page with a sticky header and footer, viewed through a 600px viewport."""
@@ -1031,6 +1095,17 @@ class Runner:
             win.skip_save_prompt = True
             shapes = sample_shapes()
             win.load_shapes([shapes[0], shapes[1], shapes[7], shapes[9]])
+            delay = 1200
+        elif kind == "editor-blur":
+            # The blur tool swaps the stroke width for its cell size and softness sliders.
+            from .editor import EditorWindow
+            from .shapes import BLUR, BlurShape
+            win = EditorWindow(app, sample_image(900, 560, 9, 4), None)
+            win.skip_save_prompt = True
+            win.load_shapes([BlurShape(a=(30, 20), b=(620, 260), cell=5, smooth=3)])
+            win.set_tool(BLUR)
+            if win.width_drop.get_visible() or not win.cell_scale.get_visible():
+                raise RuntimeError("blur tool did not show its sliders")
             delay = 1200
         elif kind == "overlay":
             from .overlay import CaptureOverlay
