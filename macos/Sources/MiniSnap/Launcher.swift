@@ -105,24 +105,38 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
         let footer = NSStackView(views: [showAtStart, spacer, close])
         footer.alignment = .centerY
 
-        let stack = NSStackView(views: [header, grid, hint, footer])
+        // The running version, small in the bottom-right corner.
+        let version = NSTextField(labelWithString: L.t("Phiên bản ") + AppInfo.version)
+        version.font = NSFont.systemFont(ofSize: 11)
+        version.textColor = .tertiaryLabelColor
+        let versionSpacer = NSView()
+        versionSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        let versionRow = NSStackView(views: [versionSpacer, version])
+
+        let margin: CGFloat = 24
+        let stack = NSStackView(views: [header, grid, hint, footer, versionRow])
         body = stack
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 18
-        stack.edgeInsets = NSEdgeInsets(top: 40, left: 24, bottom: 20, right: 24)
+        stack.setCustomSpacing(8, after: footer)
+        stack.edgeInsets = NSEdgeInsets(top: 40, left: margin, bottom: 14, right: margin)
         stack.translatesAutoresizingMaskIntoConstraints = false
         content.addSubview(stack)
+        // A fixed width: the glass background does not report the stack's size, which left the right margin out.
+        let width = 2 * LauncherWindow.tileWidth + grid.columnSpacing + 2 * margin
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             stack.topAnchor.constraint(equalTo: content.topAnchor),
             stack.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+            stack.widthAnchor.constraint(equalToConstant: width),
             footer.widthAnchor.constraint(equalTo: grid.widthAnchor),
+            versionRow.widthAnchor.constraint(equalTo: grid.widthAnchor),
         ])
         window.contentView = root
         root.layoutSubtreeIfNeeded()
-        window.setContentSize(root.fittingSize)
+        window.setContentSize(NSSize(width: width, height: stack.fittingSize.height))
     }
 
     static let tileWidth: CGFloat = 250
