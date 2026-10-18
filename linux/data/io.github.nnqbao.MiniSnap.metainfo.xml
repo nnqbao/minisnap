@@ -86,6 +86,11 @@
   </requires>
 
   <releases>
+    <release version="1.8.3" date="2026-10-18">
+      <description>
+        <p>macOS: the start window has even margins on both sides and shows the version in its bottom-right corner. Windows and Linux are unchanged.</p>
+      </description>
+    </release>
     <release version="1.8.2" date="2026-10-18">
       <description>
         <p>macOS: opening MiniSnap now shows a start window with every capture, so it is clear the app is running, and points to its menu-bar icon. Windows and Linux are unchanged.</p>
