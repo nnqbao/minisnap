@@ -86,6 +86,11 @@
   </requires>
 
   <releases>
+    <release version="1.8.6" date="2026-10-18">
+      <description>
+        <p>macOS: the buttons of the bar shown after selecting an area no longer show the text "Button" over their icons. Windows and Linux are unchanged.</p>
+      </description>
+    </release>
     <release version="1.8.5" date="2026-10-18">
       <description>
         <p>macOS: MiniSnap is now signed with a fixed certificate, so updates keep the Screen Recording permission. After installing this version, allow Screen Recording once more; later updates will not ask again. Windows and Linux are unchanged.</p>
