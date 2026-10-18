@@ -13,8 +13,8 @@ using Microsoft.Win32;
 [assembly: AssemblyTitle("Cài đặt MiniSnap")]
 [assembly: AssemblyProduct("MiniSnap")]
 [assembly: AssemblyCompany("Nguyễn Năng Quốc Bảo")]
-[assembly: AssemblyVersion("1.8.8.0")]
-[assembly: AssemblyFileVersion("1.8.8.0")]
+[assembly: AssemblyVersion("1.8.9.0")]
+[assembly: AssemblyFileVersion("1.8.9.0")]
 
 namespace MiniSnap.Setup
 {
@@ -23,7 +23,7 @@ namespace MiniSnap.Setup
     static class SetupProgram
     {
         public const string AppName = "MiniSnap";
-        public const string Version = "1.8.8";
+        public const string Version = "1.8.9";
         public const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniSnap";
         public const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
