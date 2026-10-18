@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# Builds MiniSnap.app (universal when possible), ad-hoc signs it and zips it.
+# Builds MiniSnap.app (universal when possible), signs it (fixed certificate or ad-hoc) and zips it.
 # Output: macos/dist/MiniSnap.app and macos/dist/MiniSnap-macOS.zip
 set -euo pipefail
+# On GitHub Actions, say where a failure happened (it shows as an annotation of the run).
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    trap 'echo "::error title=macos/build.sh line $LINENO::$BASH_COMMAND"' ERR
+fi
 
 cd "$(dirname "$0")"
 
@@ -56,7 +60,7 @@ if [ -n "${MACOS_SIGN_IDENTITY:-}" ]; then
         [ -n "${GITHUB_ACTIONS:-}" ] && echo "::error title=codesign failed::$(printf '%s' "$out" | tr '\n' ' ')"
         exit 1
     fi
-    [ -n "$out" ] && echo "$out"
+    if [ -n "$out" ]; then echo "$out"; fi
 else
     echo "==> Ad-hoc code signing (no certificate: Screen Recording permission resets with each build)"
     codesign --force --deep --sign - "$APP"
