@@ -86,6 +86,11 @@
   </requires>
 
   <releases>
+    <release version="1.8.4" date="2026-10-18">
+      <description>
+        <p>macOS: a gear button on the start window opens the settings (updates, shortcuts, language, start at login). A recorded keyboard shortcut now ends recording mode at once and is saved immediately, and the shortcuts window has even margins. Windows and Linux are unchanged.</p>
+      </description>
+    </release>
     <release version="1.8.3" date="2026-10-18">
       <description>
         <p>macOS: the start window has even margins on both sides and shows the version in its bottom-right corner. Windows and Linux are unchanged.</p>
