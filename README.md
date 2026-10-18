@@ -35,7 +35,7 @@
 
 ## Download
 
-Get the latest build from **[Releases](https://github.com/kingrubic/minisnap/releases)**:
+Get the latest build from **[Releases](https://github.com/nnqbao/minisnap/releases)**:
 
 - **Windows 10/11:** `MiniSnap-Setup.exe` — per-user install, no admin rights. The installer is not code-signed yet, so SmartScreen may warn: click *More info → Run anyway*.
 - **macOS 14+:** `MiniSnap-macOS.zip` — unzip, then right-click `MiniSnap.app` → *Open* the first time (the app is not notarized). Grant *Screen Recording* (and *Accessibility* for scrolling capture) when asked.
@@ -50,8 +50,8 @@ Free code signing provided by [SignPath.io](https://signpath.io), certificate by
 
 - Windows binaries (`MiniSnap.exe`, `MiniSnap-Setup.exe`) are built from this repository by GitHub Actions ([build.yml](.github/workflows/build.yml)) and only releases built that way are signed. Releases published before signing was set up are unsigned.
 - Team roles:
-  - **Committers and reviewers:** [@kingrubic](https://github.com/kingrubic) (Nguyễn Năng Quốc Bảo)
-  - **Approvers:** [@kingrubic](https://github.com/kingrubic) (Nguyễn Năng Quốc Bảo) — every release is approved manually before it is signed.
+  - **Committers and reviewers:** [@nnqbao](https://github.com/nnqbao) (Nguyễn Năng Quốc Bảo)
+  - **Approvers:** [@nnqbao](https://github.com/nnqbao) (Nguyễn Năng Quốc Bảo) — every release is approved manually before it is signed.
 - Privacy: this program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it, except the optional daily update check described in the [Privacy policy](PRIVACY.md), which can be turned off.
 
 ## Default shortcuts
@@ -107,7 +107,7 @@ Issues and pull requests are welcome — especially testing on macOS and Linux (
 
 ## Author
 
-**Nguyễn Năng Quốc Bảo** — [nnqbao@gmail.com](mailto:nnqbao@gmail.com) · [github.com/kingrubic/minisnap](https://github.com/kingrubic/minisnap)
+**Nguyễn Năng Quốc Bảo** — [nnqbao@gmail.com](mailto:nnqbao@gmail.com) · [github.com/nnqbao/minisnap](https://github.com/nnqbao/minisnap)
 
 ## License
 
@@ -126,7 +126,7 @@ MiniSnap là phần mềm chụp màn hình **miễn phí, nguồn mở (giấy 
 - Chụp cuộn trang dài, quay video màn hình ra MP4, trích chữ trong ảnh (OCR, chạy offline, đọc được tiếng Việt).
 - Thư viện ảnh & video có ảnh thu nhỏ; phím tắt; giao diện tiếng Việt / tiếng Anh.
 
-**Tải về:** vào mục [Releases](https://github.com/kingrubic/minisnap/releases).
+**Tải về:** vào mục [Releases](https://github.com/nnqbao/minisnap/releases).
 - **Windows:** chạy `MiniSnap-Setup.exe`. Nếu SmartScreen cảnh báo, bấm *More info → Run anyway*.
 - **macOS:** giải nén `MiniSnap-macOS.zip`, lần đầu bấm chuột phải vào `MiniSnap.app` → *Open*.
 - **Ubuntu:** `sudo apt install ./minisnap_*_all.deb`.

@@ -10,7 +10,7 @@ namespace MiniSnap
     {
         public const string Author = "Nguyễn Năng Quốc Bảo";
         public const string Email = "nnqbao@gmail.com";
-        public const string Repo = "https://github.com/kingrubic/minisnap";
+        public const string Repo = "https://github.com/nnqbao/minisnap";
 
         public static string Version
         {

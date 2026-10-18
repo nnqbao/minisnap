@@ -4,7 +4,7 @@ App chụp màn hình kiểu Snagit cho Windows 10/11, viết lại từ đầu 
 
 ## Cài đặt
 
-Tải `MiniSnap-Setup.exe` ở mục [Releases](https://github.com/kingrubic/minisnap/releases) (hoặc tự build, file nằm ở `windows\bin\`) rồi chạy và bấm Tiếp tục → Cài đặt → Hoàn tất. Bộ cài:
+Tải `MiniSnap-Setup.exe` ở mục [Releases](https://github.com/nnqbao/minisnap/releases) (hoặc tự build, file nằm ở `windows\bin\`) rồi chạy và bấm Tiếp tục → Cài đặt → Hoàn tất. Bộ cài:
 - cài cho riêng tài khoản của bạn vào `%LocalAppData%\Programs\MiniSnap`, không cần quyền quản trị;
 - tạo lối tắt trong Start menu, và tuỳ chọn tạo thêm ngoài Desktop;
 - tuỳ chọn tự chạy cùng Windows;

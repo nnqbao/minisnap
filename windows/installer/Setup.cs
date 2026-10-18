@@ -147,8 +147,8 @@ namespace MiniSnap.Setup
                 k.SetValue("DisplayName", "MiniSnap");
                 k.SetValue("DisplayVersion", SetupProgram.Version);
                 k.SetValue("Publisher", "Nguyễn Năng Quốc Bảo");
-                k.SetValue("URLInfoAbout", "https://github.com/kingrubic/minisnap");
-                k.SetValue("HelpLink", "https://github.com/kingrubic/minisnap/issues");
+                k.SetValue("URLInfoAbout", "https://github.com/nnqbao/minisnap");
+                k.SetValue("HelpLink", "https://github.com/nnqbao/minisnap/issues");
                 k.SetValue("Contact", "nnqbao@gmail.com");
                 k.SetValue("DisplayIcon", exe + ",0");
                 k.SetValue("InstallLocation", folder);

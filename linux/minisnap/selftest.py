@@ -143,12 +143,12 @@ def sample_release_json(version):
     """A GitHub "latest release" answer for a made-up version (no network involved)."""
     tag = "v%d.%d.%d" % tuple(version)
     v = tag[1:]
-    base = "https://github.com/kingrubic/minisnap/releases/download/%s/" % tag
+    base = "https://github.com/nnqbao/minisnap/releases/download/%s/" % tag
     assets = [("minisnap_%s_all.deb" % v, 80000), ("MiniSnap.flatpak", 4700000), ("MiniSnap-Setup.exe", 331000)]
     return {
-        "tag_name": tag, "name": tag, "html_url": "https://github.com/kingrubic/minisnap/releases/tag/" + tag,
+        "tag_name": tag, "name": tag, "html_url": "https://github.com/nnqbao/minisnap/releases/tag/" + tag,
         "body": "## What's new\r\n* Screenshots on **GNOME** work again\r\n- Update from the app\r\n\r\n\r\n"
-                "**Full Changelog**: https://github.com/kingrubic/minisnap/compare/v1.0.0...v9.9.9",
+                "**Full Changelog**: https://github.com/nnqbao/minisnap/compare/v1.0.0...v9.9.9",
         "assets": [{"name": n, "browser_download_url": base + n, "size": s, "digest": "sha256:" + "ab" * 32}
                    for n, s in assets],
     }
@@ -881,7 +881,7 @@ class Runner:
             raise RuntimeError("release_from_json / asset_for: %s" % [a["name"] for a in r.assets])
         notes = updater.clean_notes(r.notes)
         if notes != ("What's new\n• Screenshots on GNOME work again\n• Update from the app\n\n"
-                     "Full Changelog: https://github.com/kingrubic/minisnap/compare/v1.0.0...v9.9.9"):
+                     "Full Changelog: https://github.com/nnqbao/minisnap/compare/v1.0.0...v9.9.9"):
             raise RuntimeError("clean_notes -> %r" % notes)
         cmd = updater.terminal_command(r, "deb")
         if cmd != "wget -qO /tmp/minisnap.deb %s && sudo apt install -y /tmp/minisnap.deb" % deb["url"]:

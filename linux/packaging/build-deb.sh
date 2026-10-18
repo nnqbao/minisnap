@@ -31,7 +31,7 @@ Installed-Size: $INSTALLED_KB
 Depends: python3 (>= 3.10), python3-gi, python3-gi-cairo, python3-cairo, gir1.2-gtk-4.0, gir1.2-adw-1, gir1.2-gstreamer-1.0, gir1.2-gst-plugins-base-1.0, gstreamer1.0-pipewire, gstreamer1.0-plugins-good, xdg-desktop-portal
 Recommends: tesseract-ocr, tesseract-ocr-vie, tesseract-ocr-eng, gstreamer1.0-plugins-ugly, xdg-desktop-portal-gnome | xdg-desktop-portal-kde | xdg-desktop-portal-gtk
 Maintainer: Nguyễn Năng Quốc Bảo <nnqbao@gmail.com>
-Homepage: https://github.com/kingrubic/minisnap
+Homepage: https://github.com/nnqbao/minisnap
 Description: Free, open-source screen capture and screen recording tool
  MiniSnap captures a region, a window or the whole screen, lets you
  annotate it (arrows, boxes, text, blur, step numbers), records the

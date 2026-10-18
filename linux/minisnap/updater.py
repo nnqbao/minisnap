@@ -1,4 +1,4 @@
-"""Checks GitHub Releases of kingrubic/minisnap for a newer version (port of windows/src/Updater.cs).
+"""Checks GitHub Releases of nnqbao/minisnap for a newer version (port of windows/src/Updater.cs).
 
 How MiniSnap updates depends on how it was installed (install_kind):
 - deb: "Update now" downloads the release's .deb, checks it against the SHA-256 digest GitHub publishes
@@ -29,7 +29,7 @@ from gi.repository import Adw, Gio, GLib, Gtk, Pango
 from . import REPO, VERSION, paths, settings
 from .i18n import L
 
-API = "https://api.github.com/repos/kingrubic/minisnap/releases/latest"
+API = "https://api.github.com/repos/nnqbao/minisnap/releases/latest"
 DEB_LOCATION = "/usr/share/minisnap/minisnap"
 
 

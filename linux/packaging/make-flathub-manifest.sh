@@ -18,7 +18,7 @@ if local not in text:
     sys.exit("could not find the local 'dir' source in the manifest")
 git = (
     "      - type: git\n"
-    "        url: https://github.com/kingrubic/minisnap.git\n"
+    "        url: https://github.com/nnqbao/minisnap.git\n"
     f"        tag: {tag}\n"
     f"        commit: {commit}\n"
 )

@@ -22,7 +22,7 @@ def make_about(app=None, parent=None):
         comments=L.t("Đây là phần mềm chụp ảnh, quay phim màn hình miễn phí, mã nguồn mở dành cho mọi người."),
     )
     win.add_link(L.t("Quyền riêng tư: ") + L.t("MiniSnap không thu thập dữ liệu"), REPO + "/blob/main/PRIVACY.md")
-    win.add_link(L.t("Mã nguồn: ") + "github.com/kingrubic/minisnap", REPO)
+    win.add_link(L.t("Mã nguồn: ") + "github.com/nnqbao/minisnap", REPO)
     if parent is not None:
         win.set_transient_for(parent)
     if app is not None:

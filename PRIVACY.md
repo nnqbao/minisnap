@@ -12,7 +12,7 @@ MiniSnap connects to the internet only to look for updates, and only to GitHub:
 
 | When | What is contacted | What is sent |
 |---|---|---|
-| Daily, a few seconds after start — **only if "Check for updates daily" is enabled** (on by default; can be turned off in the installer or the tray / menu-bar menu) | `https://api.github.com/repos/kingrubic/minisnap/releases/latest` | A standard HTTPS request with the user agent `MiniSnap/<version>`. As with any web request, GitHub sees your IP address. |
+| Daily, a few seconds after start — **only if "Check for updates daily" is enabled** (on by default; can be turned off in the installer or the tray / menu-bar menu) | `https://api.github.com/repos/nnqbao/minisnap/releases/latest` | A standard HTTPS request with the user agent `MiniSnap/<version>`. As with any web request, GitHub sees your IP address. |
 | When you click **Check for updates** | Same as above | Same as above |
 | When you click **Download and install** | The installer file attached to the GitHub release (`github.com` / `objects.githubusercontent.com`) | A standard HTTPS download request. |
 | When you click a link (GitHub page, e-mail address) | Opens in your own browser or mail app | — |
@@ -29,7 +29,7 @@ Windows: *Settings → Apps → MiniSnap → Uninstall* (or *Control Panel → P
 
 ## Contact
 
-Nguyễn Năng Quốc Bảo — nnqbao@gmail.com — https://github.com/kingrubic/minisnap/issues
+Nguyễn Năng Quốc Bảo — nnqbao@gmail.com — https://github.com/nnqbao/minisnap/issues
 
 ---
 

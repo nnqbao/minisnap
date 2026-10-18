@@ -7,8 +7,8 @@ enum AppInfo {
     }
     static let author = "Nguyễn Năng Quốc Bảo"
     static let email = "nnqbao@gmail.com"
-    static let repoURL = "https://github.com/kingrubic/minisnap"
-    static let latestReleaseAPI = "https://api.github.com/repos/kingrubic/minisnap/releases/latest"
+    static let repoURL = "https://github.com/nnqbao/minisnap"
+    static let latestReleaseAPI = "https://api.github.com/repos/nnqbao/minisnap/releases/latest"
     static let macAssetName = "MiniSnap-macOS.zip"
 }
 

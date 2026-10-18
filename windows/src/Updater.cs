@@ -13,10 +13,10 @@ using Microsoft.Win32;
 
 namespace MiniSnap
 {
-    // Checks GitHub Releases of kingrubic/minisnap and installs a newer MiniSnap-Setup.exe in place.
+    // Checks GitHub Releases of nnqbao/minisnap and installs a newer MiniSnap-Setup.exe in place.
     static class Updater
     {
-        const string Api = "https://api.github.com/repos/kingrubic/minisnap/releases/latest";
+        const string Api = "https://api.github.com/repos/nnqbao/minisnap/releases/latest";
         const string SetupAsset = "MiniSnap-Setup.exe";
         const string RegPath = @"Software\MiniSnap";
 

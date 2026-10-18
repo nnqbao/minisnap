@@ -38,10 +38,10 @@
     <binary>minisnap</binary>
   </provides>
 
-  <url type="homepage">https://github.com/kingrubic/minisnap</url>
-  <url type="bugtracker">https://github.com/kingrubic/minisnap/issues</url>
-  <url type="vcs-browser">https://github.com/kingrubic/minisnap</url>
-  <url type="contribute">https://github.com/kingrubic/minisnap#contributing</url>
+  <url type="homepage">https://github.com/nnqbao/minisnap</url>
+  <url type="bugtracker">https://github.com/nnqbao/minisnap/issues</url>
+  <url type="vcs-browser">https://github.com/nnqbao/minisnap</url>
+  <url type="contribute">https://github.com/nnqbao/minisnap#contributing</url>
 
   <branding>
     <color type="primary" scheme_preference="light">#ffb38f</color>
@@ -51,11 +51,11 @@
   <screenshots>
     <screenshot type="default">
       <caption>Annotate a capture with arrows, boxes, text, blur and step numbers</caption>
-      <image>https://raw.githubusercontent.com/kingrubic/minisnap/main/docs/linux-editor.png</image>
+      <image>https://raw.githubusercontent.com/nnqbao/minisnap/main/docs/linux-editor.png</image>
     </screenshot>
     <screenshot>
       <caption>Start a capture, a recording or text extraction from the launcher</caption>
-      <image>https://raw.githubusercontent.com/kingrubic/minisnap/main/docs/linux-launcher.png</image>
+      <image>https://raw.githubusercontent.com/nnqbao/minisnap/main/docs/linux-launcher.png</image>
     </screenshot>
   </screenshots>
 
