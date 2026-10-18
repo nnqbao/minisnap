@@ -112,7 +112,7 @@ jobs:
         if: steps.src.outputs.present == 'true'
         run: |
           macos/dist/MiniSnap.app/Contents/MacOS/MiniSnap --render-windows "$PWD/macos-selftest"
-          for f in launcher-vi launcher-en hotkeys-vi hotkeys-en; do test -s "macos-selftest/$f.png"; done
+          for f in launcher-vi launcher-en hotkeys-vi hotkeys-en editor-vi editor-en; do test -s "macos-selftest/$f.png"; done
       - uses: actions/upload-artifact@v4
         if: always() && steps.src.outputs.present == 'true'
         with:

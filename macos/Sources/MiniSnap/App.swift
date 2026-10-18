@@ -41,6 +41,19 @@ enum MiniSnapMain {
                     all = launcher.writeSnapshot(to: dir.appendingPathComponent("launcher-" + lang + ".png")) && all
                     let hotkeys = HotkeySettingsWindow(current: keys) { _ in [] }
                     all = hotkeys.writeSnapshot(to: dir.appendingPathComponent("hotkeys-" + lang + ".png")) && all
+                    // The editor's toolbar (its buttons are drawn by hand, so they show up offscreen too).
+                    if let ctx = ImageUtil.makeContext(width: 900, height: 560) {
+                        ctx.setFillColor(CGColor(gray: 0.92, alpha: 1))
+                        ctx.fill(CGRect(x: 0, y: 0, width: 900, height: 560))
+                        if let image = ctx.makeImage() {
+                            let ed = EditorController(image: image, url: nil, imageScale: 1)
+                            ed.skipSavePrompt = true
+                            if let root = ed.window.contentView {
+                                all = writeWindowSnapshot(ed.window, content: root,
+                                                          to: dir.appendingPathComponent("editor-" + lang + ".png")) && all
+                            }
+                        }
+                    }
                 }
                 return all
             }

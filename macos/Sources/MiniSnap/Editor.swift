@@ -245,16 +245,13 @@ final class EditorController: NSObject, NSWindowDelegate {
     }
 
     private func toolButton(_ title: String, symbolName: String, tip: String, action: Selector, tag: Int) -> NSButton {
-        let b = NSButton(title: title, target: self, action: action)
-        b.image = symbol(symbolName, size: 17)
-        b.imagePosition = .imageAbove
-        b.font = NSFont.systemFont(ofSize: 10.5)
+        let b = EditorToolButton(title: title, image: symbol(symbolName, size: 17))
+        b.target = self
+        b.action = action
         b.toolTip = tip
         b.tag = tag
-        styleGlassButton(b, prominent: false, tint: nil)
         b.translatesAutoresizingMaskIntoConstraints = false
-        b.widthAnchor.constraint(greaterThanOrEqualToConstant: 50).isActive = true
-        b.heightAnchor.constraint(equalToConstant: glassAvailable() ? 50 : 46).isActive = true
+        b.heightAnchor.constraint(equalToConstant: 50).isActive = true
         return b
     }
 
@@ -503,7 +500,7 @@ final class EditorController: NSObject, NSWindowDelegate {
     }
 
     private func updateToolButtons() {
-        for (t, b) in toolButtons { setGlassButtonSelected(b, t == tool) }
+        for (t, b) in toolButtons { (b as? EditorToolButton)?.isOn = t == tool }
         updateBlurProps()
         window.invalidateCursorRects(for: canvas)
     }
@@ -1169,5 +1166,81 @@ final class EditorController: NSObject, NSWindowDelegate {
 extension EditorController: NSTextViewDelegate {
     func textDidChange(_ notification: Notification) {
         resizeTextView()
+    }
+}
+
+/// An editor toolbar button drawn by hand: symbol above its name, both centred in a rounded tile (accent
+/// coloured while selected). The glass bezel put an image-above button's symbol against its top edge.
+@MainActor
+final class EditorToolButton: NSButton {
+    private let label: String
+    private let glyph: NSImage?
+    private var hovering = false
+
+    /// The current tool (accent tile, white content).
+    var isOn = false { didSet { needsDisplay = true } }
+
+    init(title: String, image: NSImage?) {
+        label = title
+        glyph = image
+        super.init(frame: NSRect(x: 0, y: 0, width: 56, height: 50))
+        self.title = title
+        isBordered = false
+        setButtonType(.momentaryChange)
+        setAccessibilityLabel(title)
+    }
+
+    required init?(coder: NSCoder) { fatalError("not used") }
+
+    override var isFlipped: Bool { false }      // y up, as the layout below assumes
+
+    private static let font = NSFont.systemFont(ofSize: 10.5)
+
+    override var intrinsicContentSize: NSSize {
+        let w = (label as NSString).size(withAttributes: [.font: EditorToolButton.font]).width
+        return NSSize(width: max(50, ceil(w) + 18), height: 50)
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for t in trackingAreas { removeTrackingArea(t) }
+        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                                       owner: self, userInfo: nil))
+    }
+
+    override func mouseEntered(with event: NSEvent) { hovering = true; needsDisplay = true }
+    override func mouseExited(with event: NSEvent) { hovering = false; needsDisplay = true }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let r = bounds.insetBy(dx: 0.5, dy: 0.5)
+        let fill: NSColor
+        if isOn {
+            fill = isHighlighted ? NSColor.controlAccentColor.blended(withFraction: 0.2, of: .black) ?? .controlAccentColor
+                : .controlAccentColor
+        } else {
+            fill = NSColor.labelColor.withAlphaComponent(isHighlighted ? 0.22 : hovering ? 0.15 : 0.08)
+        }
+        fill.setFill()
+        NSBezierPath(roundedRect: r, xRadius: 10, yRadius: 10).fill()
+
+        let ink = isOn ? NSColor.white : (isEnabled ? NSColor.labelColor : NSColor.tertiaryLabelColor)
+        let attrs: [NSAttributedString.Key: Any] = [.font: EditorToolButton.font, .foregroundColor: ink]
+        let textSize = (label as NSString).size(withAttributes: attrs)
+        let iconSize = glyph?.size ?? .zero
+        let gap: CGFloat = 4
+        // Symbol and name as one block, centred vertically and horizontally.
+        let blockHeight = iconSize.height + (glyph == nil ? 0 : gap) + textSize.height
+        let bottom = (bounds.height - blockHeight) / 2
+        (label as NSString).draw(at: NSPoint(x: (bounds.width - textSize.width) / 2, y: bottom), withAttributes: attrs)
+        if let g = glyph {
+            let tinted = NSImage(size: g.size, flipped: false) { rect in
+                g.draw(in: rect)
+                ink.set()
+                rect.fill(using: .sourceAtop)
+                return true
+            }
+            tinted.draw(in: NSRect(x: (bounds.width - iconSize.width) / 2, y: bottom + textSize.height + gap,
+                                   width: iconSize.width, height: iconSize.height))
+        }
     }
 }
