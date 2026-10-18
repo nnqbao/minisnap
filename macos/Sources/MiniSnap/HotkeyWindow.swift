@@ -204,7 +204,7 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
         let (root, content) = makeGlassWindowBackground()
 
         let intro = NSTextField(wrappingLabelWithString: L.t("Bấm vào ô bên phải rồi nhấn tổ hợp phím mới, ví dụ ⌥⇧2 hoặc F9.\nDelete để bỏ phím tắt, Esc để giữ phím cũ. Phím tắt dùng được ở mọi nơi, kể cả khi đang ở app khác."))
-        intro.preferredMaxLayoutWidth = 660
+        intro.preferredMaxLayoutWidth = 480
         intro.textColor = .secondaryLabelColor
 
         var rows: [[NSView]] = []
@@ -229,7 +229,10 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
             status.textColor = .secondaryLabelColor
             status.lineBreakMode = .byTruncatingTail
             status.translatesAutoresizingMaskIntoConstraints = false
-            status.widthAnchor.constraint(equalToConstant: 210).isActive = true
+            status.alignment = .center
+            status.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+            // Just a ✓ or ⚠ (details in its tooltip and the line at the bottom), so no empty column widens the window.
+            status.widthAnchor.constraint(equalToConstant: 20).isActive = true
             fields[a] = field
             statuses[a] = status
             rows.append([icon, name, field, clear, status])
@@ -275,7 +278,8 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
             stack.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             stack.topAnchor.constraint(equalTo: content.topAnchor),
             stack.bottomAnchor.constraint(equalTo: content.bottomAnchor),
-            buttons.widthAnchor.constraint(equalTo: grid.widthAnchor)
+            buttons.widthAnchor.constraint(equalTo: grid.widthAnchor),
+            intro.widthAnchor.constraint(equalTo: grid.widthAnchor)
         ])
         window.contentView = root
         root.layoutSubtreeIfNeeded()
@@ -297,6 +301,12 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
         return m
     }
 
+    private func mark(_ st: NSTextField, _ symbol: String, _ color: NSColor, _ message: String?) {
+        st.stringValue = symbol
+        st.textColor = color
+        st.toolTip = message
+    }
+
     /// Marks duplicates and enables Save only when every shortcut is unique.
     @discardableResult
     private func refreshStatus() -> Bool {
@@ -314,11 +324,9 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
             guard let st = statuses[a] else { continue }
             if let c = clash {
                 ok = false
-                st.textColor = .systemRed
-                st.stringValue = L.t("⚠ Trùng: ") + c.label
+                mark(st, "⚠", .systemRed, L.t("⚠ Trùng: ") + c.label)
             } else {
-                st.textColor = .secondaryLabelColor
-                st.stringValue = h.isNone ? L.t("Chỉ dùng từ menu") : ""
+                mark(st, "", .secondaryLabelColor, h.isNone ? L.t("Chỉ dùng từ menu") : nil)
             }
         }
         saveButton.isEnabled = ok
@@ -335,11 +343,9 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
         for a in HotkeyAction.allCases {
             guard let st = statuses[a] else { continue }
             if failed.contains(a) {
-                st.textColor = .systemRed
-                st.stringValue = L.t("⚠ App khác đang dùng phím này")
+                mark(st, "⚠", .systemRed, L.t("⚠ App khác đang dùng phím này"))
             } else if (action == nil || action == a), !(fields[a]?.value.isNone ?? true) {
-                st.textColor = .systemGreen
-                st.stringValue = L.t("✓ Đã lưu")
+                mark(st, "✓", .systemGreen, L.t("✓ Đã lưu"))
             }
         }
         if failed.isEmpty {
@@ -369,11 +375,9 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
         for a in HotkeyAction.allCases {
             guard let st = statuses[a] else { continue }
             if failed.contains(a) {
-                st.textColor = .systemRed
-                st.stringValue = L.t("⚠ App khác đang dùng phím này")
+                mark(st, "⚠", .systemRed, L.t("⚠ App khác đang dùng phím này"))
             } else if !(fields[a]?.value.isNone ?? true) {
-                st.textColor = .systemGreen
-                st.stringValue = L.t("✓ Đã lưu")
+                mark(st, "✓", .systemGreen, L.t("✓ Đã lưu"))
             }
         }
         if failed.isEmpty {
