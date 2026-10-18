@@ -82,6 +82,7 @@ enum L {
         // Permissions
         "Cần quyền Ghi màn hình": "Screen Recording permission needed",
         "MiniSnap cần quyền Ghi màn hình (Screen Recording) để chụp ảnh và quay video.\n\nMở Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Ghi màn hình & âm thanh hệ thống, bật MiniSnap, rồi mở lại MiniSnap.":
+        "Nếu MiniSnap đã bật sẵn trong danh sách mà vẫn bị hỏi (thường sau khi cập nhật), hãy chọn MiniSnap, bấm nút − để xoá, rồi mở lại MiniSnap và cho phép lại.": "If MiniSnap is already switched on in the list but you are still asked (usually after an update), select MiniSnap, click − to remove it, then reopen MiniSnap and allow it again.",
             "MiniSnap needs Screen Recording permission to take screenshots and record videos.\n\nOpen System Settings → Privacy & Security → Screen & System Audio Recording, turn on MiniSnap, then relaunch MiniSnap.",
         "Cần quyền Trợ năng": "Accessibility permission needed",
         "Chụp cuộn cần quyền Trợ năng (Accessibility) để tự cuộn cửa sổ.\n\nMở Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Trợ năng, bật MiniSnap, rồi thử lại.":

@@ -45,9 +45,18 @@ else
 fi
 rm -rf "$DIST/AppIcon.iconset"
 
-echo "==> Ad-hoc code signing"
-codesign --force --deep --sign - "$APP"
+# With a fixed certificate (CI imports it from the repository secrets) the signature, and so the identity
+# macOS remembers the Screen Recording permission by, stays the same across versions. An ad-hoc signature
+# changes with every build, so macOS asks for the permission again after each update.
+if [ -n "${MACOS_SIGN_IDENTITY:-}" ]; then
+    echo "==> Code signing with \"$MACOS_SIGN_IDENTITY\""
+    codesign --force --deep --timestamp=none --sign "$MACOS_SIGN_IDENTITY" ${MACOS_KEYCHAIN:+--keychain "$MACOS_KEYCHAIN"} "$APP"
+else
+    echo "==> Ad-hoc code signing (no certificate: Screen Recording permission resets with each build)"
+    codesign --force --deep --sign - "$APP"
+fi
 codesign --verify --verbose=2 "$APP" || true
+codesign --display --requirements - "$APP" 2>&1 | tail -n 1 || true
 
 echo "==> Zipping"
 ditto -c -k --keepParent "$APP" "$DIST/MiniSnap-macOS.zip"

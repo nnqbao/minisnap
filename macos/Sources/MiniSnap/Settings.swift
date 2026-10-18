@@ -142,6 +142,7 @@ enum Permissions {
         let alert = NSAlert()
         alert.messageText = L.t("Cần quyền Ghi màn hình")
         var text = L.t("MiniSnap cần quyền Ghi màn hình (Screen Recording) để chụp ảnh và quay video.\n\nMở Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Ghi màn hình & âm thanh hệ thống, bật MiniSnap, rồi mở lại MiniSnap.")
+        text += "\n\n" + L.t("Nếu MiniSnap đã bật sẵn trong danh sách mà vẫn bị hỏi (thường sau khi cập nhật), hãy chọn MiniSnap, bấm nút − để xoá, rồi mở lại MiniSnap và cho phép lại.")
         if let d = detail, !d.isEmpty { text += "\n\n(" + d + ")" }
         alert.informativeText = text
         alert.alertStyle = .warning
