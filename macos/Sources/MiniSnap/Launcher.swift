@@ -65,7 +65,7 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
             Entry(action: .scrollCapture, title: L.t("Chụp cuộn trang dài"), symbolName: "arrow.down.doc", tint: .systemOrange),
             Entry(action: .recordVideo, title: recording ? L.t("Dừng quay video") : L.t("Quay video màn hình"),
                   symbolName: recording ? "stop.circle" : "record.circle", tint: .systemRed),
-            Entry(action: .ocr, title: L.t("Chụp và trích chữ (OCR)"), symbolName: "text.viewfinder", tint: .systemPurple),
+            Entry(action: .ocr, title: L.t("Trích chữ (OCR)"), symbolName: "text.viewfinder", tint: .systemPurple),
             Entry(action: .library, title: L.t("Thư viện ảnh & video"), symbolName: "photo.on.rectangle", tint: .systemGreen),
             Entry(action: nil, title: L.t("Mở ảnh..."), symbolName: "folder", tint: .systemTeal),
         ]
