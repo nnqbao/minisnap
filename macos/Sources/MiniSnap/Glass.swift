@@ -287,3 +287,27 @@ class FloatingBar: NSPanel {
         setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: true)
     }
 }
+
+/// Renders `content` (a view filling the window) to a PNG without showing the window, over a plain
+/// window-coloured background since the glass only draws on screen. Used for CI screenshots.
+@MainActor
+func writeWindowSnapshot(_ window: NSWindow, content view: NSView, to url: URL) -> Bool {
+    window.contentView?.layoutSubtreeIfNeeded()
+    guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return false }
+    view.cacheDisplay(in: view.bounds, to: rep)
+    let size = view.bounds.size
+    guard let out = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: rep.pixelsWide, pixelsHigh: rep.pixelsHigh,
+                                     bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                     colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return false }
+    out.size = size
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: out)
+    window.effectiveAppearance.performAsCurrentDrawingAppearance {
+        NSColor.windowBackgroundColor.setFill()
+        NSRect(origin: .zero, size: size).fill()
+    }
+    rep.draw(in: NSRect(origin: .zero, size: size))
+    NSGraphicsContext.restoreGraphicsState()
+    guard let data = out.representation(using: .png, properties: [:]) else { return false }
+    return (try? data.write(to: url)) != nil
+}

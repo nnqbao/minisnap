@@ -17,14 +17,18 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
     private let keys: [HotkeyAction: Hotkey]
     private let recording: Bool
     private let perform: (HotkeyAction?) -> Void
+    private let settingsMenu: () -> NSMenu
     private var entries: [Entry] = []
     private var body: NSView?
 
     /// `perform(nil)` means "Open image...".
-    init(keys: [HotkeyAction: Hotkey], recording: Bool, perform: @escaping (HotkeyAction?) -> Void) {
+    /// `settingsMenu` builds the menu of the gear button (updates, shortcuts, language...).
+    init(keys: [HotkeyAction: Hotkey], recording: Bool, settingsMenu: @escaping () -> NSMenu,
+         perform: @escaping (HotkeyAction?) -> Void) {
         self.keys = keys
         self.recording = recording
         self.perform = perform
+        self.settingsMenu = settingsMenu
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 520, height: 520),
                           styleMask: [.titled, .closable, .miniaturizable],
                           backing: .buffered, defer: false)
@@ -54,7 +58,18 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
         titles.orientation = .vertical
         titles.alignment = .leading
         titles.spacing = 2
-        let header = NSStackView(views: [icon, titles])
+        // Gear in the top-right corner: settings without going through the menu bar.
+        let gear = NSButton(image: symbol("gearshape", size: 17, weight: .medium) ?? NSImage(), target: self, action: #selector(gearPressed(_:)))
+        gear.isBordered = false
+        gear.contentTintColor = .secondaryLabelColor
+        gear.toolTip = L.t("Cài đặt")
+        gear.setAccessibilityLabel(L.t("Cài đặt"))
+        gear.translatesAutoresizingMaskIntoConstraints = false
+        gear.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        gear.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        let headerSpacer = NSView()
+        headerSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        let header = NSStackView(views: [icon, titles, headerSpacer, gear])
         header.spacing = 14
         header.alignment = .centerY
 
@@ -132,6 +147,7 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
             stack.bottomAnchor.constraint(equalTo: content.bottomAnchor),
             stack.widthAnchor.constraint(equalToConstant: width),
             footer.widthAnchor.constraint(equalTo: grid.widthAnchor),
+            header.widthAnchor.constraint(equalTo: grid.widthAnchor),
             versionRow.widthAnchor.constraint(equalTo: grid.widthAnchor),
         ])
         window.contentView = root
@@ -171,6 +187,12 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
     }
 
     @objc private func toggleShowAtStart(_ sender: NSButton) { Prefs.showLauncherAtStart = sender.state == .on }
+    @objc private func gearPressed(_ sender: NSButton) {
+        // Just below the button, whichever way its coordinates run.
+        let y = sender.isFlipped ? sender.bounds.height + 4 : -4
+        settingsMenu().popUp(positioning: nil, at: NSPoint(x: 0, y: y), in: sender)
+    }
+
     @objc private func closePressed() { window.close() }
 
     func windowWillClose(_ notification: Notification) { onClose?() }
@@ -178,25 +200,8 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
     /// Renders the window's content to a PNG without showing it (CI screenshots). The glass background only
     /// draws on screen, so the content is drawn over a plain window-coloured background instead.
     func writeSnapshot(to url: URL) -> Bool {
-        guard let root = window.contentView, let view = body else { return false }
-        root.layoutSubtreeIfNeeded()
-        guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return false }
-        view.cacheDisplay(in: view.bounds, to: rep)
-        let size = view.bounds.size
-        guard let out = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: rep.pixelsWide, pixelsHigh: rep.pixelsHigh,
-                                         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return false }
-        out.size = size
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: out)
-        window.effectiveAppearance.performAsCurrentDrawingAppearance {
-            NSColor.windowBackgroundColor.setFill()
-            NSRect(origin: .zero, size: size).fill()
-        }
-        rep.draw(in: NSRect(origin: .zero, size: size))
-        NSGraphicsContext.restoreGraphicsState()
-        guard let data = out.representation(using: .png, properties: [:]) else { return false }
-        return (try? data.write(to: url)) != nil
+        guard let view = body else { return false }
+        return writeWindowSnapshot(window, content: view, to: url)
     }
 }
 

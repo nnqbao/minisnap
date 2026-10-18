@@ -95,8 +95,26 @@ final class HotkeyField: NSView {
         transient = nil
         revertTask?.cancel()
         value = candidate
+        // Done: leave recording mode at once so the new combination shows (and is saved by onChange).
+        window?.makeFirstResponder(nil)
+        flashSaved()
         onChange?()
         return true
+    }
+
+    /// A short green outline after a combination was recorded.
+    private var savedFlash = false
+
+    private func flashSaved() {
+        savedFlash = true
+        needsDisplay = true
+        revertTask?.cancel()
+        revertTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            if Task.isCancelled { return }
+            self?.savedFlash = false
+            self?.needsDisplay = true
+        }
     }
 
     private func showError(_ text: String) {
@@ -120,8 +138,8 @@ final class HotkeyField: NSView {
             : NSColor.textBackgroundColor
         bg.setFill()
         path.fill()
-        (recording ? NSColor.controlAccentColor : NSColor.separatorColor).setStroke()
-        path.lineWidth = recording ? 2 : 1
+        (recording ? NSColor.controlAccentColor : savedFlash ? NSColor.systemGreen : NSColor.separatorColor).setStroke()
+        path.lineWidth = recording || savedFlash ? 2 : 1
         path.stroke()
 
         let text: String
@@ -162,6 +180,7 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
     private var statuses: [HotkeyAction: NSTextField] = [:]
     private var saveButton = NSButton()
     private let footer = NSTextField(labelWithString: "")
+    private var body: NSView?
     private let apply: ([HotkeyAction: Hotkey]) -> [HotkeyAction]
     var onClose: (() -> Void)?
 
@@ -196,7 +215,7 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
             let name = NSTextField(labelWithString: a.label)
             let field = HotkeyField()
             field.value = current[a] ?? Hotkey.empty
-            field.onChange = { [weak self] in self?.refreshStatus() }
+            field.onChange = { [weak self] in self?.changed(a) }
             let clear = NSButton(title: "✕", target: self, action: #selector(clearPressed(_:)))
             clear.tag = a.rawValue
             clear.toolTip = L.t("Bỏ phím tắt này")
@@ -244,6 +263,7 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
         buttons.spacing = 10
 
         let stack = NSStackView(views: [intro, grid, buttons])
+        body = stack
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 14
@@ -259,7 +279,8 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
         ])
         window.contentView = root
         root.layoutSubtreeIfNeeded()
-        window.setContentSize(root.fittingSize)
+        // The stack's own size: the glass background does not report it, which cut off the right side.
+        window.setContentSize(stack.fittingSize)
         window.center()
     }
 
@@ -306,6 +327,30 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
         return ok
     }
 
+    /// Every change is saved and applied at once (when no two actions share a key), like System Settings,
+    /// so a recorded combination is visibly done. `action` nil = all rows changed (Restore defaults).
+    private func changed(_ action: HotkeyAction?) {
+        guard refreshStatus() else { return }
+        let failed = apply(values)
+        for a in HotkeyAction.allCases {
+            guard let st = statuses[a] else { continue }
+            if failed.contains(a) {
+                st.textColor = .systemRed
+                st.stringValue = L.t("⚠ App khác đang dùng phím này")
+            } else if (action == nil || action == a), !(fields[a]?.value.isNone ?? true) {
+                st.textColor = .systemGreen
+                st.stringValue = L.t("✓ Đã lưu")
+            }
+        }
+        if failed.isEmpty {
+            footer.textColor = .systemGreen
+            footer.stringValue = L.t("Đã lưu và áp dụng.")
+        } else {
+            footer.textColor = .systemRed
+            footer.stringValue = L.t("Đã lưu, nhưng ") + String(failed.count) + L.t(" phím đang bị app khác chiếm — hãy chọn phím khác.")
+        }
+    }
+
     @objc private func clearPressed(_ sender: NSButton) {
         guard let a = HotkeyAction(rawValue: sender.tag) else { return }
         fields[a]?.clearKey()
@@ -314,7 +359,7 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
     @objc private func resetPressed() {
         let d = HotkeySettings.defaults()
         for (a, f) in fields { f.value = d[a] ?? Hotkey.empty }
-        refreshStatus()
+        changed(nil)
     }
 
     @objc private func savePressed() {
@@ -339,6 +384,12 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
             footer.textColor = .systemRed
             footer.stringValue = L.t("Đã lưu, nhưng ") + String(failed.count) + L.t(" phím đang bị app khác chiếm — hãy chọn phím khác.")
         }
+    }
+
+    /// CI screenshot of the window (see writeWindowSnapshot).
+    func writeSnapshot(to url: URL) -> Bool {
+        guard let view = body else { return false }
+        return writeWindowSnapshot(window, content: view, to: url)
     }
 
     @objc private func closePressed() {

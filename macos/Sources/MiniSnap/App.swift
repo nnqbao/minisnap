@@ -11,16 +11,20 @@ enum MiniSnapMain {
             let ok = MainActor.assumeIsolated { BlurGrid.write(to: URL(fileURLWithPath: args[i + 1])) }
             exit(ok ? 0 : 1)
         }
-        // `MiniSnap --render-launcher out-vi.png out-en.png`: the launcher window in both languages, for CI.
-        if let i = args.firstIndex(of: "--render-launcher"), i + 2 < args.count {
+        // `MiniSnap --render-windows DIR`: launcher-vi/en.png and hotkeys-vi/en.png in DIR, for CI.
+        if let i = args.firstIndex(of: "--render-windows"), i + 1 < args.count {
+            let dir = URL(fileURLWithPath: args[i + 1], isDirectory: true)
             let ok = MainActor.assumeIsolated { () -> Bool in
                 _ = NSApplication.shared
                 NSApp.setActivationPolicy(.accessory)
                 var all = true
-                for (english, path) in [(false, args[i + 1]), (true, args[i + 2])] {
+                for (english, lang) in [(false, "vi"), (true, "en")] {
                     L.set(english: english)
-                    let w = LauncherWindow(keys: HotkeySettings.load(), recording: false) { _ in }
-                    all = w.writeSnapshot(to: URL(fileURLWithPath: path)) && all
+                    let keys = HotkeySettings.load()
+                    let launcher = LauncherWindow(keys: keys, recording: false, settingsMenu: { NSMenu() }) { _ in }
+                    all = launcher.writeSnapshot(to: dir.appendingPathComponent("launcher-" + lang + ".png")) && all
+                    let hotkeys = HotkeySettingsWindow(current: keys) { _ in [] }
+                    all = hotkeys.writeSnapshot(to: dir.appendingPathComponent("hotkeys-" + lang + ".png")) && all
                 }
                 return all
             }
@@ -162,7 +166,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             l.show()
             return
         }
-        let l = LauncherWindow(keys: keys, recording: recorder?.isActive == true) { [weak self] action in
+        let l = LauncherWindow(keys: keys, recording: recorder?.isActive == true,
+                               settingsMenu: { [weak self] in self?.makeSettingsMenu() ?? NSMenu() }) { [weak self] action in
             guard let self = self else { return }
             if let a = action { self.run(a) } else { self.menuOpenImage() }
         }
@@ -376,11 +381,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         a.show()
     }
 
+    /// The launcher's gear menu: the settings of the menu-bar menu, without the captures.
+    private func makeSettingsMenu() -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        func item(_ title: String, _ action: Selector, _ symbolName: String?) -> NSMenuItem {
+            let i = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            i.target = self
+            if let s = symbolName { i.image = symbol(s, size: 14) }
+            menu.addItem(i)
+            return i
+        }
+        _ = item(L.t("Kiểm tra cập nhật..."), #selector(menuCheckUpdates), "arrow.down.circle")
+        _ = item(L.t("Cài đặt phím tắt..."), #selector(menuHotkeys), "keyboard")
+        let langItem = NSMenuItem(title: "Ngôn ngữ / Language", action: nil, keyEquivalent: "")
+        langItem.image = symbol("globe", size: 14)
+        let langMenu = NSMenu()
+        for (title, english, action) in [("Tiếng Việt", false, #selector(menuVietnamese)), ("English", true, #selector(menuEnglish))] {
+            let l = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            l.target = self
+            l.state = L.english == english ? .on : .off
+            langMenu.addItem(l)
+        }
+        langItem.submenu = langMenu
+        menu.addItem(langItem)
+        menu.addItem(NSMenuItem.separator())
+        item(L.t("Hỏi chụp ảnh / quay video / chụp cuộn sau khi chọn vùng"), #selector(menuToggleAsk), nil).state =
+            Prefs.askModeAfterSelection ? .on : .off
+        item(L.t("Khởi động cùng máy Mac"), #selector(menuToggleLogin), nil).state = LoginItem.enabled ? .on : .off
+        menu.addItem(NSMenuItem.separator())
+        _ = item(L.t("Giới thiệu MiniSnap"), #selector(showAbout), "info.circle")
+        _ = item(L.t("Thoát MiniSnap"), #selector(menuQuit), nil)
+        return menu
+    }
+
     private func setLanguage(english: Bool) {
         if english == L.english { return }
         L.set(english: english)
         buildMainMenu()
         rebuildStatusMenu()
+        // The launcher is rebuilt in the new language right away (other windows switch when reopened).
+        if let l = launcher {
+            l.onClose = nil
+            l.window.close()
+            launcher = nil
+            showLauncher()
+        }
         notifier.post("MiniSnap", english
             ? "Language changed to English. Open windows switch when you reopen them."
             : "Đã chuyển sang Tiếng Việt. Các cửa sổ đang mở sẽ đổi khi bạn mở lại.")

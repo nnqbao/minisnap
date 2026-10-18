@@ -42,6 +42,7 @@ enum L {
         "Mở thư viện ảnh & video": "Open image & video library",
         "Mở ảnh...": "Open image...",
         "Mở cửa sổ MiniSnap": "Open the MiniSnap window",
+        "Cài đặt": "Settings",
         "Chụp sau 3 giây": "Capture after 3 seconds",
         "Chụp ảnh, quay video màn hình và trích chữ": "Screenshots, screen recording and text extraction",
         "MiniSnap chạy trên thanh menu: bấm biểu tượng này ở góc trên bên phải màn hình để chụp bất cứ lúc nào, kể cả khi đã đóng cửa sổ này.": "MiniSnap lives in the menu bar: click this icon at the top right of the screen to capture at any time, even after closing this window.",
