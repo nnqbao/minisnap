@@ -365,10 +365,14 @@ final class OverlayView: NSView, NSTextFieldDelegate {
         let b: NSButton
         if let img = symbol(symbolName, size: 17, weight: .semibold) {
             b = NSButton(image: img, target: self, action: action)
+            // NSButton(image:) keeps the placeholder title "Button"; the glass style would draw it over the icon.
+            b.title = ""
+            b.imagePosition = .imageOnly
         } else {
             b = NSButton(title: fallback, target: self, action: action)
         }
         b.toolTip = tip
+        b.setAccessibilityLabel(tip)
         b.controlSize = .large
         styleGlassButton(b, prominent: true, tint: tint)
         b.translatesAutoresizingMaskIntoConstraints = false

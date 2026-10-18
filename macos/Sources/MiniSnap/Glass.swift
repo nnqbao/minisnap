@@ -157,6 +157,8 @@ func setGlassButtonSelected(_ b: NSButton, _ selected: Bool) {
 
 @MainActor
 func setButtonTitleColor(_ b: NSButton, _ color: NSColor, font: NSFont? = nil) {
+    // An icon-only button has no visible title (its placeholder "Button" must not be drawn).
+    if b.imagePosition == .imageOnly || b.title.isEmpty { return }
     let para = NSMutableParagraphStyle()
     para.alignment = .center
     let f = font ?? b.font ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)

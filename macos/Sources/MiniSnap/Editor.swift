@@ -300,6 +300,8 @@ final class EditorController: NSObject, NSWindowDelegate {
         let b: NSButton
         if let s = symbolName, let img = symbol(s, size: 13) {
             b = NSButton(image: img, target: self, action: action)
+            b.title = ""        // not the placeholder "Button"
+            b.imagePosition = .imageOnly
         } else {
             b = NSButton(title: title ?? "", target: self, action: action)
         }
