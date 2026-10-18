@@ -291,7 +291,8 @@ final class EditorController: NSObject, NSWindowDelegate {
         row.orientation = .horizontal
         row.spacing = 12
         row.alignment = .centerY
-        row.edgeInsets = NSEdgeInsets(top: 6, left: 10, bottom: 6, right: 10)
+        // Glass buttons draw a few points outside their frames: more room above so the row does not touch the title bar.
+        row.edgeInsets = NSEdgeInsets(top: 12, left: 10, bottom: 10, right: 10)
         row.translatesAutoresizingMaskIntoConstraints = false
         return row
     }
@@ -380,7 +381,7 @@ final class EditorController: NSObject, NSWindowDelegate {
         row.orientation = .horizontal
         row.spacing = 6
         row.alignment = .centerY
-        row.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 5, right: 12)
+        row.edgeInsets = NSEdgeInsets(top: 6, left: 12, bottom: 6, right: 12)
         row.translatesAutoresizingMaskIntoConstraints = false
         return row
     }
