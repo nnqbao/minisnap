@@ -48,10 +48,7 @@ enum MiniSnapMain {
                         if let image = ctx.makeImage() {
                             let ed = EditorController(image: image, url: nil, imageScale: 1)
                             ed.skipSavePrompt = true
-                            if let root = ed.window.contentView {
-                                all = writeWindowSnapshot(ed.window, content: root,
-                                                          to: dir.appendingPathComponent("editor-" + lang + ".png")) && all
-                            }
+                            all = ed.writeToolbarSnapshot(to: dir.appendingPathComponent("editor-" + lang + ".png")) && all
                         }
                     }
                 }
