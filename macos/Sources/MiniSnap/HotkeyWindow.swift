@@ -235,7 +235,7 @@ final class HotkeySettingsWindow: NSObject, NSWindowDelegate {
             status.widthAnchor.constraint(equalToConstant: 20).isActive = true
             fields[a] = field
             statuses[a] = status
-            rows.append([icon, name, field, clear, status])
+            rows.append([icon, name, status, field, clear])
         }
         let grid = NSGridView(views: rows)
         grid.rowSpacing = 8
