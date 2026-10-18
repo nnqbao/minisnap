@@ -86,7 +86,7 @@ On Windows and macOS all shortcuts can be changed in **Keyboard shortcuts…** f
   ```bash
   cd linux && python3 -m minisnap        # run from the source tree
   bash linux/packaging/build-deb.sh      # → linux/dist/minisnap_<version>_all.deb
-  flatpak-builder --user --install build-dir linux/packaging/io.github.kingrubic.MiniSnap.yml
+  flatpak-builder --user --install build-dir linux/packaging/io.github.nnqbao.MiniSnap.yml
   ```
   See [linux/README.md](linux/README.md) for the apt packages to install first.
 

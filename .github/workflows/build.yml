@@ -79,8 +79,8 @@ jobs:
       - name: Validate AppStream metadata and desktop file (Flathub requirements)
         if: steps.src.outputs.present == 'true'
         run: |
-          appstreamcli validate --no-net --explain linux/data/io.github.kingrubic.MiniSnap.metainfo.xml
-          desktop-file-validate linux/data/io.github.kingrubic.MiniSnap.desktop
+          appstreamcli validate --no-net --explain linux/data/io.github.nnqbao.MiniSnap.metainfo.xml
+          desktop-file-validate linux/data/io.github.nnqbao.MiniSnap.desktop
       - name: Self-test under Xvfb (renders every window to PNG)
         if: steps.src.outputs.present == 'true'
         working-directory: linux
@@ -122,13 +122,13 @@ jobs:
         id: src
         shell: bash
         run: |
-          if [ -f linux/packaging/io.github.kingrubic.MiniSnap.yml ] && [ -f linux/minisnap/__init__.py ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
+          if [ -f linux/packaging/io.github.nnqbao.MiniSnap.yml ] && [ -f linux/minisnap/__init__.py ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         if: steps.src.outputs.present == 'true'
         with:
           bundle: MiniSnap.flatpak
-          manifest-path: linux/packaging/io.github.kingrubic.MiniSnap.yml
-          cache-key: flatpak-builder-${{ hashFiles('linux/packaging/io.github.kingrubic.MiniSnap.yml') }}
+          manifest-path: linux/packaging/io.github.nnqbao.MiniSnap.yml
+          cache-key: flatpak-builder-${{ hashFiles('linux/packaging/io.github.nnqbao.MiniSnap.yml') }}
 
   # Pushing a tag such as v1.5.0 publishes a GitHub Release with the downloads that were built.
   release:
@@ -143,13 +143,13 @@ jobs:
         with:
           path: dist
       - name: Flathub manifest for this tag
-        run: bash linux/packaging/make-flathub-manifest.sh "${{ github.ref_name }}" dist/io.github.kingrubic.MiniSnap.yml
+        run: bash linux/packaging/make-flathub-manifest.sh "${{ github.ref_name }}" dist/io.github.nnqbao.MiniSnap.yml
       - name: Release notes from the AppStream metadata
         run: |
           python3 - "${GITHUB_REF_NAME#v}" > dist/release-notes.md <<'EOF'
           import sys
           import xml.etree.ElementTree as ET
-          root = ET.parse("linux/data/io.github.kingrubic.MiniSnap.metainfo.xml").getroot()
+          root = ET.parse("linux/data/io.github.nnqbao.MiniSnap.metainfo.xml").getroot()
           for rel in root.iter("release"):
               if rel.get("version") == sys.argv[1]:
                   for p in rel.iter("p"):
@@ -167,4 +167,4 @@ jobs:
             dist/MiniSnap-macOS/MiniSnap-macOS.zip
             dist/MiniSnap-Linux/*.deb
             dist/MiniSnap-x86_64.flatpak/*.flatpak
-            dist/io.github.kingrubic.MiniSnap.yml
+            dist/io.github.nnqbao.MiniSnap.yml

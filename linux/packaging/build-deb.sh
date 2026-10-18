@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."            # linux/
 VERSION="$(python3 -c 'import re; print(re.search(r"VERSION\s*=\s*\"([^\"]+)\"", open("minisnap/__init__.py", encoding="utf-8").read()).group(1))')"
 PKG="build/minisnap_${VERSION}_all"
-APP_ID="io.github.kingrubic.MiniSnap"
+APP_ID="io.github.nnqbao.MiniSnap"
 
 rm -rf build dist
 mkdir -p "$PKG/DEBIAN" "$PKG/usr/bin" "$PKG/usr/share/minisnap" "$PKG/usr/share/applications" \

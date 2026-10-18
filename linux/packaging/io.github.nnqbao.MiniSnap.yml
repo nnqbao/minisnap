@@ -1,5 +1,5 @@
-# Flatpak manifest for MiniSnap (build: flatpak-builder --user --install build-dir linux/packaging/io.github.kingrubic.MiniSnap.yml)
-app-id: io.github.kingrubic.MiniSnap
+# Flatpak manifest for MiniSnap (build: flatpak-builder --user --install build-dir linux/packaging/io.github.nnqbao.MiniSnap.yml)
+app-id: io.github.nnqbao.MiniSnap
 runtime: org.gnome.Platform
 runtime-version: '48'
 sdk: org.gnome.Sdk
@@ -78,9 +78,9 @@ modules:
       - mkdir -p /app/share/minisnap
       - cp -r minisnap /app/share/minisnap/
       - install -Dm755 bin/minisnap /app/bin/minisnap
-      - install -Dm644 data/io.github.kingrubic.MiniSnap.desktop /app/share/applications/io.github.kingrubic.MiniSnap.desktop
-      - install -Dm644 data/icons/hicolor/scalable/apps/io.github.kingrubic.MiniSnap.svg /app/share/icons/hicolor/scalable/apps/io.github.kingrubic.MiniSnap.svg
-      - install -Dm644 data/io.github.kingrubic.MiniSnap.metainfo.xml /app/share/metainfo/io.github.kingrubic.MiniSnap.metainfo.xml
+      - install -Dm644 data/io.github.nnqbao.MiniSnap.desktop /app/share/applications/io.github.nnqbao.MiniSnap.desktop
+      - install -Dm644 data/icons/hicolor/scalable/apps/io.github.nnqbao.MiniSnap.svg /app/share/icons/hicolor/scalable/apps/io.github.nnqbao.MiniSnap.svg
+      - install -Dm644 data/io.github.nnqbao.MiniSnap.metainfo.xml /app/share/metainfo/io.github.nnqbao.MiniSnap.metainfo.xml
     sources:
       - type: dir
         path: ..

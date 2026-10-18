@@ -244,8 +244,8 @@ class FakePortal:
     allow_silent, the screenshot UI answers with a PNG, deny_all refuses everything) and the permission
     store's DeletePermission. Every call is recorded as (sender, method, args)."""
 
-    NAME = "io.github.kingrubic.MiniSnap.SelfTest.Portal"
-    STORE_NAME = "io.github.kingrubic.MiniSnap.SelfTest.PermissionStore"
+    NAME = "io.github.nnqbao.MiniSnap.SelfTest.Portal"
+    STORE_NAME = "io.github.nnqbao.MiniSnap.SelfTest.PermissionStore"
     XML = """<node>
   <interface name='org.freedesktop.host.portal.Registry'>
     <method name='Register'><arg type='s' direction='in'/><arg type='a{sv}' direction='in'/></method>
@@ -802,7 +802,7 @@ class Runner:
                 raise RuntimeError("silent grab after reset: %s %s" % (surface, ui))
 
             # A portal that is not there is an error, not a refusal, and no screenshot UI is tried.
-            portal.BUS_NAME = "io.github.kingrubic.MiniSnap.SelfTest.Nobody"
+            portal.BUS_NAME = "io.github.nnqbao.MiniSnap.SelfTest.Nobody"
             portal.reset()
             n = len(fake.calls)
             surface, error, ui = self._portal_shot(capture, False, fallbacks)
@@ -900,8 +900,8 @@ class Runner:
         try:
             info = os.path.join(folder, "flatpak-info")
             with open(info, "w", encoding="utf-8") as f:
-                f.write("[Application]\nname=io.github.kingrubic.MiniSnap\n\n[Instance]\n"
-                        "app-path=/home/u/.local/share/flatpak/app/io.github.kingrubic.MiniSnap/x86_64/master/abc/files\n")
+                f.write("[Application]\nname=io.github.nnqbao.MiniSnap\n\n[Instance]\n"
+                        "app-path=/home/u/.local/share/flatpak/app/io.github.nnqbao.MiniSnap/x86_64/master/abc/files\n")
             if not updater.flatpak_user_install(info) or updater.flatpak_user_install(os.path.join(folder, "none")):
                 raise RuntimeError("flatpak_user_install")
             if updater.expected_sha256(deb) != "ab" * 32 or updater.expected_sha256({"digest": "md5:12"}) is not None:

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2026 Nguyễn Năng Quốc Bảo -->
 <component type="desktop-application">
-  <id>io.github.kingrubic.MiniSnap</id>
+  <id>io.github.nnqbao.MiniSnap</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
 
@@ -9,7 +9,7 @@
   <summary>Capture, annotate and record your screen</summary>
   <summary xml:lang="vi">Chụp, chú thích và quay màn hình</summary>
 
-  <developer id="io.github.kingrubic">
+  <developer id="io.github.nnqbao">
     <name>Nguyễn Năng Quốc Bảo</name>
   </developer>
 
@@ -33,7 +33,10 @@
     <p>MiniSnap collects no data. Screen access always goes through the system's permission prompts.</p>
   </description>
 
-  <launchable type="desktop-id">io.github.kingrubic.MiniSnap.desktop</launchable>
+  <launchable type="desktop-id">io.github.nnqbao.MiniSnap.desktop</launchable>
+  <replaces>
+    <id>io.github.kingrubic.MiniSnap</id>
+  </replaces>
   <provides>
     <binary>minisnap</binary>
   </provides>
@@ -83,6 +86,12 @@
   </requires>
 
   <releases>
+    <release version="1.8.1" date="2026-10-18">
+      <description>
+        <p>MiniSnap has moved to github.com/nnqbao/minisnap. Update checks, links and downloads now use the new address on Windows, macOS and Linux.</p>
+        <p>Linux: the app ID is now io.github.nnqbao.MiniSnap. The .deb upgrades in place; GNOME may ask once more for the screenshot permission. If you use the Flatpak bundle, uninstall the old one with "flatpak uninstall io.github.kingrubic.MiniSnap" after installing this version; its settings are not carried over, and keyboard shortcuts that run "flatpak run io.github.kingrubic.MiniSnap" need the new ID.</p>
+      </description>
+    </release>
     <release version="1.8.0" date="2026-10-18">
       <description>
         <p>The blur tool has two new sliders: cell size, from a fine blur up to big mosaic tiles, and softness, from crisp squares to a smooth blur. They also change a blurred area that is already selected.</p>

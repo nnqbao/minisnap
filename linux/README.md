@@ -100,7 +100,7 @@ Without the portal, set the shortcuts in the desktop's own settings. On GNOME:
 3. Click *Set Shortcut…* and press the keys (e.g. Ctrl+Alt+C).
 
 When running from source, use the full path of `linux/bin/minisnap` instead of `minisnap` (inside
-Flatpak: `flatpak run io.github.kingrubic.MiniSnap`). The menu item **Keyboard shortcuts…** in the
+Flatpak: `flatpak run io.github.nnqbao.MiniSnap`). The menu item **Keyboard shortcuts…** in the
 launcher shows the exact commands with copy buttons. GNOME keeps the Print Screen key for its own
 screenshot tool; remove it under *Screenshots* first if you want it for MiniSnap.
 

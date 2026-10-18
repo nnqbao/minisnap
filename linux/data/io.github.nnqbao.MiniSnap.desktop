@@ -6,12 +6,13 @@ GenericName[vi]=Công cụ chụp màn hình
 Comment=Free, open-source screenshot and screen recording software for everyone
 Comment[vi]=Phần mềm chụp ảnh, quay phim màn hình miễn phí, mã nguồn mở dành cho mọi người
 Exec=minisnap %U
-Icon=io.github.kingrubic.MiniSnap
+Icon=io.github.nnqbao.MiniSnap
 Terminal=false
 Categories=Graphics;
 Keywords=screenshot;screen;capture;record;video;ocr;annotate;snip;chụp;màn hình;quay;
 StartupNotify=true
 SingleMainWindow=true
+X-Flatpak-RenamedFrom=io.github.kingrubic.MiniSnap.desktop;
 Actions=capture-region;capture-full;capture-scroll;record;ocr;library;
 
 [Desktop Action capture-region]

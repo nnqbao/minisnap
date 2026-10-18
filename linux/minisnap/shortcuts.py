@@ -21,7 +21,7 @@ def launcher_command():
 
     Inside Flatpak the shortcut runs on the host, so it must go through `flatpak run`."""
     if paths.in_flatpak():
-        return "flatpak run " + os.environ.get("FLATPAK_ID", "io.github.kingrubic.MiniSnap")
+        return "flatpak run " + os.environ.get("FLATPAK_ID", "io.github.nnqbao.MiniSnap")
     if shutil.which("minisnap"):
         return "minisnap"
     here = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bin", "minisnap")
