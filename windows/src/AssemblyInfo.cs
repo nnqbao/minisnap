@@ -5,5 +5,5 @@
 [assembly: AssemblyProduct("MiniSnap")]
 [assembly: AssemblyCompany("Nguyễn Năng Quốc Bảo")]
 [assembly: AssemblyCopyright("© 2026 Nguyễn Năng Quốc Bảo — MIT License")]
-[assembly: AssemblyVersion("1.8.6.0")]
-[assembly: AssemblyFileVersion("1.8.6.0")]
+[assembly: AssemblyVersion("1.8.7.0")]
+[assembly: AssemblyFileVersion("1.8.7.0")]

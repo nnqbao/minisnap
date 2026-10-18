@@ -86,6 +86,11 @@
   </requires>
 
   <releases>
+    <release version="1.8.7" date="2026-10-18">
+      <description>
+        <p>macOS: the editor's toolbar rows have even spacing above and below, so the tool buttons no longer touch the title bar. Windows and Linux are unchanged.</p>
+      </description>
+    </release>
     <release version="1.8.6" date="2026-10-18">
       <description>
         <p>macOS: the buttons of the bar shown after selecting an area no longer show the text "Button" over their icons. Windows and Linux are unchanged.</p>
