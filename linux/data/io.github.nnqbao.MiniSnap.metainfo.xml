@@ -86,6 +86,11 @@
   </requires>
 
   <releases>
+    <release version="1.8.5" date="2026-10-18">
+      <description>
+        <p>macOS: MiniSnap is now signed with a fixed certificate, so updates keep the Screen Recording permission. After installing this version, allow Screen Recording once more; later updates will not ask again. Windows and Linux are unchanged.</p>
+      </description>
+    </release>
     <release version="1.8.4" date="2026-10-18">
       <description>
         <p>macOS: a gear button on the start window opens the settings (updates, shortcuts, language, start at login). A recorded keyboard shortcut now ends recording mode at once and is saved immediately, and the shortcuts window has even margins. Windows and Linux are unchanged.</p>
