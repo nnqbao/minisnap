@@ -212,6 +212,9 @@ final class EditorController: NSObject, NSWindowDelegate {
             toolsRow.trailingAnchor.constraint(equalTo: toolsContent.trailingAnchor),
             toolsRow.topAnchor.constraint(equalTo: toolsContent.topAnchor),
             toolsRow.bottomAnchor.constraint(equalTo: toolsContent.bottomAnchor),
+            // An explicit height: a centred stack view ignores its top/bottom insets, which left the 50 pt buttons
+            // touching the title bar. 68 pt centres them with 9 pt above and below.
+            toolsRow.heightAnchor.constraint(equalToConstant: 68),
 
             propsBg.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             propsBg.trailingAnchor.constraint(equalTo: root.trailingAnchor),

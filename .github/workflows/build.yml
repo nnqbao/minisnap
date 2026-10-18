@@ -93,6 +93,17 @@ jobs:
           REPORT="$(macos/dist/MiniSnap.app/Contents/MacOS/MiniSnap --editor-layout)"
           echo "$REPORT"
           echo "::notice title=editor layout::$REPORT"
+          # The tool buttons must sit below the title bar with room above them, not touch it.
+          python3 - "$REPORT" <<'EOF'
+          import re, sys
+          r = sys.argv[1]
+          top = float(re.search(r"contentLayoutRect top=([\d.]+)", r).group(1))
+          bar = [float(v) for v in re.search(r"toolsBar y=([\d.]+)\.\.([\d.]+)", r).groups()]
+          btn = [float(v) for v in re.search(r"selectButton y=([\d.]+)\.\.([\d.]+)", r).groups()]
+          above, below = btn[0] - bar[0], bar[1] - btn[1]
+          print("space above %.1f, below %.1f" % (above, below))
+          sys.exit(0 if bar[0] >= top and above >= 6 and abs(above - below) <= 2 else 1)
+          EOF
       - name: Render the launcher and keyboard shortcuts windows
         if: steps.src.outputs.present == 'true'
         run: |
