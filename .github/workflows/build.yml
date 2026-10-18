@@ -101,8 +101,12 @@ jobs:
           bar = [float(v) for v in re.search(r"toolsBar y=([\d.]+)\.\.([\d.]+)", r).groups()]
           btn = [float(v) for v in re.search(r"selectButton y=([\d.]+)\.\.([\d.]+)", r).groups()]
           above, below = btn[0] - bar[0], bar[1] - btn[1]
-          print("space above %.1f, below %.1f" % (above, below))
-          sys.exit(0 if bar[0] >= top and above >= 6 and abs(above - below) <= 2 else 1)
+          pbar = [float(v) for v in re.search(r"propsBar y=([\d.]+)\.\.([\d.]+)", r).groups()]
+          undo = [float(v) for v in re.search(r"undoButton y=([\d.]+)\.\.([\d.]+)", r).groups()]
+          pabove, pbelow = undo[0] - pbar[0], pbar[1] - undo[1]
+          print("tools row: space above %.1f, below %.1f; properties row: above %.1f, below %.1f" % (above, below, pabove, pbelow))
+          ok = bar[0] >= top and above >= 6 and abs(above - below) <= 2 and pabove >= 4 and abs(pabove - pbelow) <= 2
+          sys.exit(0 if ok else 1)
           EOF
       - name: Render the launcher and keyboard shortcuts windows
         if: steps.src.outputs.present == 'true'

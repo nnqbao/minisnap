@@ -109,6 +109,7 @@ final class EditorController: NSObject, NSWindowDelegate {
 
     private var toolsBar: NSView?
     private var toolsRow: NSView?
+    private var propsBar: NSView?
 
     /// Where the toolbar and its buttons really are, in window points (top-left origin), for CI.
     func layoutReport() -> String {
@@ -123,6 +124,7 @@ final class EditorController: NSObject, NSWindowDelegate {
         var lines = [
             String(format: "window h=%.1f contentLayoutRect top=%.1f", h, h - window.contentLayoutRect.maxY),
             "toolsBar " + r(toolsBar), "toolsRow " + r(toolsRow), "selectButton " + r(first), "copyButton " + r(copyButton),
+            "propsBar " + r(propsBar), "undoButton " + r(undoButton), "widthPopup " + r(widthPopup),
         ]
         if let b = first {
             lines.append(String(format: "selectButton alignmentRectInsets t=%.1f b=%.1f fitting h=%.1f bezel=%d",
@@ -176,6 +178,7 @@ final class EditorController: NSObject, NSWindowDelegate {
         toolsContent.addSubview(toolsRow)
 
         let (propsBg, propsContent) = makeGlassContainer(cornerRadius: 0, tint: nil, material: .menu)
+        propsBar = propsBg
         root.addSubview(propsBg)
         let propsRow = buildPropsRow()
         propsContent.addSubview(propsRow)
@@ -223,6 +226,8 @@ final class EditorController: NSObject, NSWindowDelegate {
             propsRow.trailingAnchor.constraint(lessThanOrEqualTo: propsContent.trailingAnchor),
             propsRow.topAnchor.constraint(equalTo: propsContent.topAnchor),
             propsRow.bottomAnchor.constraint(equalTo: propsContent.bottomAnchor),
+            // Same reason as the tools row: 40 pt leaves about 6 pt around its 28 pt controls.
+            propsRow.heightAnchor.constraint(equalToConstant: 40),
 
             scrollView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
