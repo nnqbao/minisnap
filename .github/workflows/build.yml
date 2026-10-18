@@ -72,10 +72,14 @@ jobs:
       - name: Check the signature
         if: steps.src.outputs.present == 'true'
         run: |
-          codesign --display --verbose=2 macos/dist/MiniSnap.app 2>&1 | grep -E '^(Identifier|Authority|Signature)=' || true
+          INFO="$(codesign --display --verbose=2 macos/dist/MiniSnap.app 2>&1 | grep -E '^(Identifier|Authority|Signature)=' || true)"
+          REQ="$(codesign --display --requirements - macos/dist/MiniSnap.app 2>&1 | grep 'designated' || true)"
+          echo "$INFO"; echo "$REQ"
+          echo "::notice title=signature::$(printf '%s' "$INFO" | tr '\n' ' ') | $REQ"
           if [ "$HAS_CERT" = "true" ]; then
-            codesign --display --verbose=2 macos/dist/MiniSnap.app 2>&1 | grep -q '^Authority=MiniSnap Code Signing (nnqbao)$'
-            codesign --display --requirements - macos/dist/MiniSnap.app 2>&1 | grep -q 'certificate leaf'
+            # The designated requirement must pin the certificate (not a per-build hash, as an ad-hoc one does).
+            printf '%s' "$INFO" | grep -q 'Authority=MiniSnap Code Signing (nnqbao)'
+            printf '%s' "$REQ" | grep -Eq 'certificate (leaf|root)'
           fi
       - name: Render the blur settings grid
         if: steps.src.outputs.present == 'true'
