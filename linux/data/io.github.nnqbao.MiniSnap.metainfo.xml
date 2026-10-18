@@ -86,6 +86,11 @@
   </requires>
 
   <releases>
+    <release version="1.8.2" date="2026-10-18">
+      <description>
+        <p>macOS: opening MiniSnap now shows a start window with every capture, so it is clear the app is running, and points to its menu-bar icon. Windows and Linux are unchanged.</p>
+      </description>
+    </release>
     <release version="1.8.1" date="2026-10-18">
       <description>
         <p>MiniSnap has moved to github.com/nnqbao/minisnap. Update checks, links and downloads now use the new address on Windows, macOS and Linux.</p>

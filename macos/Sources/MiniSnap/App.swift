@@ -11,6 +11,21 @@ enum MiniSnapMain {
             let ok = MainActor.assumeIsolated { BlurGrid.write(to: URL(fileURLWithPath: args[i + 1])) }
             exit(ok ? 0 : 1)
         }
+        // `MiniSnap --render-launcher out-vi.png out-en.png`: the launcher window in both languages, for CI.
+        if let i = args.firstIndex(of: "--render-launcher"), i + 2 < args.count {
+            let ok = MainActor.assumeIsolated { () -> Bool in
+                _ = NSApplication.shared
+                NSApp.setActivationPolicy(.accessory)
+                var all = true
+                for (english, path) in [(false, args[i + 1]), (true, args[i + 2])] {
+                    L.set(english: english)
+                    let w = LauncherWindow(keys: HotkeySettings.load(), recording: false) { _ in }
+                    all = w.writeSnapshot(to: URL(fileURLWithPath: path)) && all
+                }
+                return all
+            }
+            exit(ok ? 0 : 1)
+        }
         MainActor.assumeIsolated {
             let app = NSApplication.shared
             let delegate = AppDelegate()
@@ -84,6 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var library: LibraryWindow?
     private var hotkeyWindow: HotkeySettingsWindow?
     private var aboutWindow: AboutWindow?
+    private var launcher: LauncherWindow?
     private let notifier = Notifier()
     private var quitAfterRecording = false
 
@@ -128,6 +144,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.notifier.post(L.t("Có bản MiniSnap mới"), "MiniSnap " + version + " — " + L.t("Chọn \"Kiểm tra cập nhật...\" trong menu để tải về."), info: "update")
         }
         Updater.shared.checkDailyIfNeeded()
+
+        // A menu-bar app shows nothing by itself, so the launcher says it is running. Not when it was
+        // started with the Mac (start at login, shortly after boot): it then stays in the menu bar.
+        let atLogin = LoginItem.enabled && ProcessInfo.processInfo.systemUptime < 180
+        if Prefs.showLauncherAtStart && !atLogin { showLauncher() }
+    }
+
+    /// Opening MiniSnap again (Finder, Dock, Spotlight) while it runs brings the launcher back.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showLauncher()
+        return true
+    }
+
+    @objc private func showLauncher() {
+        if let l = launcher {
+            l.show()
+            return
+        }
+        let l = LauncherWindow(keys: keys, recording: recorder?.isActive == true) { [weak self] action in
+            guard let self = self else { return }
+            if let a = action { self.run(a) } else { self.menuOpenImage() }
+        }
+        l.onClose = { [weak self] in self?.launcher = nil }
+        launcher = l
+        l.show()
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -243,6 +284,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusMenu.addItem(NSMenuItem.separator())
         addItem(L.t("Thư viện ảnh & video"), #selector(menuLibrary), symbolName: "photo.on.rectangle", hotkey: .library)
         addItem(L.t("Mở ảnh..."), #selector(menuOpenImage), symbolName: "folder")
+        addItem(L.t("Mở cửa sổ MiniSnap"), #selector(showLauncher), symbolName: "macwindow.on.rectangle")
         statusMenu.addItem(NSMenuItem.separator())
 
         let ask = addItem(L.t("Hỏi chụp ảnh / quay video / chụp cuộn sau khi chọn vùng"), #selector(menuToggleAsk))

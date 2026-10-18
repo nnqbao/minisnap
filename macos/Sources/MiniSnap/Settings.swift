@@ -16,6 +16,17 @@ enum Prefs {
         set { UserDefaults.standard.set(newValue, forKey: askModeKey) }
     }
 
+    private static let showLauncherKey = "MiniSnap.ShowLauncherAtStart"
+
+    /// The launcher window appears when MiniSnap is opened (see AppDelegate for the start-at-login case).
+    static var showLauncherAtStart: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: showLauncherKey) == nil { return true }
+            return UserDefaults.standard.bool(forKey: showLauncherKey)
+        }
+        set { UserDefaults.standard.set(newValue, forKey: showLauncherKey) }
+    }
+
     static var lastUpdateCheck: Date? {
         get { UserDefaults.standard.object(forKey: lastUpdateCheckKey) as? Date }
         set { UserDefaults.standard.set(newValue, forKey: lastUpdateCheckKey) }

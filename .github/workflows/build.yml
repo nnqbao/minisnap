@@ -43,6 +43,11 @@ jobs:
           mkdir -p macos-selftest
           macos/dist/MiniSnap.app/Contents/MacOS/MiniSnap --blur-grid "$PWD/macos-selftest/blur-grid.png"
           test -s macos-selftest/blur-grid.png
+      - name: Render the launcher window
+        if: steps.src.outputs.present == 'true'
+        run: |
+          macos/dist/MiniSnap.app/Contents/MacOS/MiniSnap --render-launcher "$PWD/macos-selftest/launcher-vi.png" "$PWD/macos-selftest/launcher-en.png"
+          test -s macos-selftest/launcher-vi.png && test -s macos-selftest/launcher-en.png
       - uses: actions/upload-artifact@v4
         if: always() && steps.src.outputs.present == 'true'
         with:
