@@ -111,13 +111,13 @@ final class EditorController: NSObject, NSWindowDelegate {
     private var toolsRow: NSView?
     private var propsBar: NSView?
 
-    /// Where the toolbar and its buttons really are, in window points (top-left origin), for CI.
-    /// CI screenshot of the two toolbar rows (the glass backgrounds around them only draw on screen).
+    /// CI screenshot of the tools row (the glass background around it only draws on screen).
     func writeToolbarSnapshot(to url: URL) -> Bool {
         guard let row = toolsRow else { return false }
         return writeWindowSnapshot(window, content: row, to: url)
     }
 
+    /// Where the toolbar and its buttons really are, in window points (top-left origin), for CI.
     func layoutReport() -> String {
         window.layoutIfNeeded()
         let h = window.frame.height
