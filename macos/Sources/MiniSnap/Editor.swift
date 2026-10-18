@@ -1233,10 +1233,9 @@ final class EditorToolButton: NSButton {
         let attrs: [NSAttributedString.Key: Any] = [.font: EditorToolButton.font, .foregroundColor: ink]
         let textSize = (label as NSString).size(withAttributes: attrs)
         let iconSize = glyph?.size ?? .zero
-        let gap: CGFloat = 4
-        // Symbol and name as one block, centred vertically and horizontally.
-        let blockHeight = iconSize.height + (glyph == nil ? 0 : gap) + textSize.height
-        let bottom = (bounds.height - blockHeight) / 2
+        // A fixed slot for the symbol (symbols differ in height), so every name sits on the same line.
+        let slot: CGFloat = 20, gap: CGFloat = 4
+        let bottom = (bounds.height - (slot + gap + textSize.height)) / 2
         (label as NSString).draw(at: NSPoint(x: (bounds.width - textSize.width) / 2, y: bottom), withAttributes: attrs)
         if let g = glyph {
             let tinted = NSImage(size: g.size, flipped: false) { rect in
@@ -1245,7 +1244,8 @@ final class EditorToolButton: NSButton {
                 rect.fill(using: .sourceAtop)
                 return true
             }
-            tinted.draw(in: NSRect(x: (bounds.width - iconSize.width) / 2, y: bottom + textSize.height + gap,
+            let slotBottom = bottom + textSize.height + gap
+            tinted.draw(in: NSRect(x: (bounds.width - iconSize.width) / 2, y: slotBottom + (slot - iconSize.height) / 2,
                                    width: iconSize.width, height: iconSize.height))
         }
     }
