@@ -18,6 +18,7 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
     private let recording: Bool
     private let perform: (HotkeyAction?) -> Void
     private var entries: [Entry] = []
+    private var body: NSView?
 
     /// `perform(nil)` means "Open image...".
     init(keys: [HotkeyAction: Hotkey], recording: Bool, perform: @escaping (HotkeyAction?) -> Void) {
@@ -105,6 +106,7 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
         footer.alignment = .centerY
 
         let stack = NSStackView(views: [header, grid, hint, footer])
+        body = stack
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 18
@@ -170,13 +172,27 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) { onClose?() }
 
-    /// Renders the window's content to a PNG without showing it (CI screenshots).
+    /// Renders the window's content to a PNG without showing it (CI screenshots). The glass background only
+    /// draws on screen, so the content is drawn over a plain window-coloured background instead.
     func writeSnapshot(to url: URL) -> Bool {
-        guard let view = window.contentView else { return false }
-        view.layoutSubtreeIfNeeded()
+        guard let root = window.contentView, let view = body else { return false }
+        root.layoutSubtreeIfNeeded()
         guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return false }
         view.cacheDisplay(in: view.bounds, to: rep)
-        guard let data = rep.representation(using: .png, properties: [:]) else { return false }
+        let size = view.bounds.size
+        guard let out = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: rep.pixelsWide, pixelsHigh: rep.pixelsHigh,
+                                         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return false }
+        out.size = size
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: out)
+        window.effectiveAppearance.performAsCurrentDrawingAppearance {
+            NSColor.windowBackgroundColor.setFill()
+            NSRect(origin: .zero, size: size).fill()
+        }
+        rep.draw(in: NSRect(origin: .zero, size: size))
+        NSGraphicsContext.restoreGraphicsState()
+        guard let data = out.representation(using: .png, properties: [:]) else { return false }
         return (try? data.write(to: url)) != nil
     }
 }
