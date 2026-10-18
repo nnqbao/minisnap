@@ -107,6 +107,30 @@ final class EditorController: NSObject, NSWindowDelegate {
 
     // MARK: - Public
 
+    private var toolsBar: NSView?
+    private var toolsRow: NSView?
+
+    /// Where the toolbar and its buttons really are, in window points (top-left origin), for CI.
+    func layoutReport() -> String {
+        window.layoutIfNeeded()
+        let h = window.frame.height
+        func r(_ v: NSView?) -> String {
+            guard let v = v else { return "nil" }
+            let f = v.convert(v.bounds, to: nil)
+            return String(format: "y=%.1f..%.1f x=%.1f w=%.1f", h - f.maxY, h - f.minY, f.minX, f.width)
+        }
+        let first = toolButtons[.select]
+        var lines = [
+            String(format: "window h=%.1f contentLayoutRect top=%.1f", h, h - window.contentLayoutRect.maxY),
+            "toolsBar " + r(toolsBar), "toolsRow " + r(toolsRow), "selectButton " + r(first), "copyButton " + r(copyButton),
+        ]
+        if let b = first {
+            lines.append(String(format: "selectButton alignmentRectInsets t=%.1f b=%.1f fitting h=%.1f bezel=%d",
+                                b.alignmentRectInsets.top, b.alignmentRectInsets.bottom, b.fittingSize.height, b.bezelStyle.rawValue))
+        }
+        return lines.joined(separator: " | ")
+    }
+
     var magnification: CGFloat { scrollView.magnification }
     var devicePixelsPerImagePixel: CGFloat { scrollView.magnification * (window.backingScaleFactor) }
 
@@ -145,8 +169,10 @@ final class EditorController: NSObject, NSWindowDelegate {
 
         // Top toolbar (glass)
         let (toolsBg, toolsContent) = makeGlassContainer(cornerRadius: 0, tint: nil, material: .menu)
+        toolsBar = toolsBg
         root.addSubview(toolsBg)
         let toolsRow = buildToolsRow()
+        self.toolsRow = toolsRow
         toolsContent.addSubview(toolsRow)
 
         let (propsBg, propsContent) = makeGlassContainer(cornerRadius: 0, tint: nil, material: .menu)

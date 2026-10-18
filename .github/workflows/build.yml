@@ -87,6 +87,12 @@ jobs:
           mkdir -p macos-selftest
           macos/dist/MiniSnap.app/Contents/MacOS/MiniSnap --blur-grid "$PWD/macos-selftest/blur-grid.png"
           test -s macos-selftest/blur-grid.png
+      - name: Report the editor toolbar layout
+        if: steps.src.outputs.present == 'true'
+        run: |
+          REPORT="$(macos/dist/MiniSnap.app/Contents/MacOS/MiniSnap --editor-layout)"
+          echo "$REPORT"
+          echo "::notice title=editor layout::$REPORT"
       - name: Render the launcher and keyboard shortcuts windows
         if: steps.src.outputs.present == 'true'
         run: |

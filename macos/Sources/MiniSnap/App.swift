@@ -11,6 +11,22 @@ enum MiniSnapMain {
             let ok = MainActor.assumeIsolated { BlurGrid.write(to: URL(fileURLWithPath: args[i + 1])) }
             exit(ok ? 0 : 1)
         }
+        // `MiniSnap --editor-layout`: prints where the editor's toolbar and buttons are laid out (CI check).
+        if args.contains("--editor-layout") {
+            MainActor.assumeIsolated {
+                _ = NSApplication.shared
+                NSApp.setActivationPolicy(.accessory)
+                guard let ctx = ImageUtil.makeContext(width: 900, height: 560) else { exit(1) }
+                ctx.setFillColor(CGColor(gray: 0.9, alpha: 1))
+                ctx.fill(CGRect(x: 0, y: 0, width: 900, height: 560))
+                guard let image = ctx.makeImage() else { exit(1) }
+                let ed = EditorController(image: image, url: nil, imageScale: 1)
+                ed.skipSavePrompt = true
+                ed.show()
+                print(ed.layoutReport())
+            }
+            exit(0)
+        }
         // `MiniSnap --render-windows DIR`: launcher-vi/en.png and hotkeys-vi/en.png in DIR, for CI.
         if let i = args.firstIndex(of: "--render-windows"), i + 1 < args.count {
             let dir = URL(fileURLWithPath: args[i + 1], isDirectory: true)
