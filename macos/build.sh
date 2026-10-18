@@ -50,7 +50,13 @@ rm -rf "$DIST/AppIcon.iconset"
 # changes with every build, so macOS asks for the permission again after each update.
 if [ -n "${MACOS_SIGN_IDENTITY:-}" ]; then
     echo "==> Code signing with \"$MACOS_SIGN_IDENTITY\""
-    codesign --force --deep --timestamp=none --sign "$MACOS_SIGN_IDENTITY" ${MACOS_KEYCHAIN:+--keychain "$MACOS_KEYCHAIN"} "$APP"
+    if ! out="$(codesign --force --deep --timestamp=none --sign "$MACOS_SIGN_IDENTITY" ${MACOS_KEYCHAIN:+--keychain "$MACOS_KEYCHAIN"} "$APP" 2>&1)"; then
+        echo "$out" >&2
+        # On GitHub Actions the reason also shows as an annotation of the run.
+        [ -n "${GITHUB_ACTIONS:-}" ] && echo "::error title=codesign failed::$(printf '%s' "$out" | tr '\n' ' ')"
+        exit 1
+    fi
+    [ -n "$out" ] && echo "$out"
 else
     echo "==> Ad-hoc code signing (no certificate: Screen Recording permission resets with each build)"
     codesign --force --deep --sign - "$APP"
