@@ -130,23 +130,12 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
     /// A big tinted button: symbol and name, with the global shortcut (when set) on a second, smaller line.
     private func makeTile(_ e: Entry, tag: Int) -> NSView {
         let shortcut = e.action.flatMap { keys[$0]?.shortText }
-        let b = NSButton(title: e.title, target: self, action: #selector(tilePressed(_:)))
+        let b = LauncherTile(title: e.title, shortcut: shortcut, image: symbol(e.symbolName, size: 18, weight: .semibold), tint: e.tint)
+        b.target = self
+        b.action = #selector(tilePressed(_:))
         b.tag = tag
-        b.image = symbol(e.symbolName, size: 18, weight: .semibold)
-        b.imagePosition = .imageLeading
-        b.imageHugsTitle = true
-        b.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
         b.toolTip = shortcut.map { e.title + " (" + $0 + ")" } ?? e.title
-        styleGlassButton(b, prominent: true, tint: e.tint)
-        let para = NSMutableParagraphStyle()
-        para.alignment = .left
-        let title = NSMutableAttributedString(string: e.title, attributes: [
-            .foregroundColor: NSColor.white, .font: NSFont.systemFont(ofSize: 13, weight: .semibold), .paragraphStyle: para])
-        if let s = shortcut {
-            title.append(NSAttributedString(string: "\n" + s, attributes: [
-                .foregroundColor: NSColor.white.withAlphaComponent(0.78), .font: NSFont.systemFont(ofSize: 11), .paragraphStyle: para]))
-        }
-        b.attributedTitle = title
+        b.setAccessibilityLabel(e.title)
         b.translatesAutoresizingMaskIntoConstraints = false
         b.widthAnchor.constraint(equalToConstant: LauncherWindow.tileWidth).isActive = true
         b.heightAnchor.constraint(equalToConstant: 50).isActive = true
@@ -194,5 +183,85 @@ final class LauncherWindow: NSObject, NSWindowDelegate {
         NSGraphicsContext.restoreGraphicsState()
         guard let data = out.representation(using: .png, properties: [:]) else { return false }
         return (try? data.write(to: url)) != nil
+    }
+}
+
+/// A launcher button drawn by hand: a rounded tile in its colour with a white symbol, the name and the shortcut.
+/// Drawn rather than a glass bezel so it looks the same on every macOS version (and in CI snapshots).
+@MainActor
+final class LauncherTile: NSButton {
+    private let label: String
+    private let shortcut: String?
+    private let glyph: NSImage?
+    private let tint: NSColor
+    private var hovering = false
+
+    init(title: String, shortcut: String?, image: NSImage?, tint: NSColor) {
+        label = title
+        self.shortcut = shortcut
+        glyph = image
+        self.tint = tint
+        super.init(frame: NSRect(x: 0, y: 0, width: 250, height: 50))
+        self.title = title
+        isBordered = false
+        setButtonType(.momentaryChange)
+        focusRingType = .default
+    }
+
+    required init?(coder: NSCoder) { fatalError("not used") }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for t in trackingAreas { removeTrackingArea(t) }
+        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                                       owner: self, userInfo: nil))
+    }
+
+    override var isFlipped: Bool { false }     // y up, as the layout below assumes
+
+    override func mouseEntered(with event: NSEvent) { hovering = true; needsDisplay = true }
+    override func mouseExited(with event: NSEvent) { hovering = false; needsDisplay = true }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let r = bounds.insetBy(dx: 0.5, dy: 0.5)
+        let base = tint.usingColorSpace(.sRGB) ?? tint
+        let fill = isHighlighted ? base.blended(withFraction: 0.25, of: .black) ?? base
+            : hovering ? base.blended(withFraction: 0.12, of: .white) ?? base : base
+        fill.setFill()
+        NSBezierPath(roundedRect: r, xRadius: 12, yRadius: 12).fill()
+
+        var x: CGFloat = 14
+        if let g = glyph {
+            let tinted = NSImage(size: g.size, flipped: false) { rect in
+                g.draw(in: rect)
+                NSColor.white.set()
+                rect.fill(using: .sourceAtop)
+                return true
+            }
+            let gr = NSRect(x: x, y: (bounds.height - g.size.height) / 2, width: g.size.width, height: g.size.height)
+            tinted.draw(in: gr)
+            x += max(24, g.size.width) + 10
+        }
+        let width = bounds.width - x - 10
+        let titleAttrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 13, weight: .semibold), .foregroundColor: NSColor.white]
+        let titleSize = (label as NSString).size(withAttributes: titleAttrs)
+        if let s = shortcut {
+            let subAttrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.white.withAlphaComponent(0.8)]
+            let subSize = (s as NSString).size(withAttributes: subAttrs)
+            let top = (bounds.height + titleSize.height + subSize.height) / 2
+            (label as NSString).draw(with: NSRect(x: x, y: top - titleSize.height, width: width, height: titleSize.height),
+                                     options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: titleAttrs)
+            (s as NSString).draw(with: NSRect(x: x, y: top - titleSize.height - subSize.height, width: width, height: subSize.height),
+                                 options: [.usesLineFragmentOrigin], attributes: subAttrs)
+        } else {
+            (label as NSString).draw(with: NSRect(x: x, y: (bounds.height - titleSize.height) / 2, width: width, height: titleSize.height),
+                                     options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: titleAttrs)
+        }
+        if window?.firstResponder === self && NSApp.isActive {
+            NSColor.keyboardFocusIndicatorColor.setStroke()
+            let ring = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 11, yRadius: 11)
+            ring.lineWidth = 3
+            ring.stroke()
+        }
     }
 }
